@@ -1,35 +1,65 @@
-/**
- * @def BME280_DRIVER_BME280_H_
- * @brief BME280 driver header file for API function declarations.
- *
- */
 #ifndef BME280_DRIVER_BME280_H_
 #define BME280_DRIVER_BME280_H_
-
-/*******************************************************************************
- *                          Includes		                                   *
- *******************************************************************************/
-
-#include <std_types.h>
-
-/*******************************************************************************
- *                          Definitions		                                   *
- *******************************************************************************/
-
-#define BME280_FEATURE_ENABLE 1
-#define BME280_FEATURE_DISABLE 0
-
-#define BME280_FLOATING_POINT BME280_FEATURE_ENABLE
-#define BME280_FIXED_POINT BME280_FEATURE_ENABLE
 
 /*******************************************************************************
  *                          Typedefs		                                   *
  *******************************************************************************/
 
 /**
- * BME280 API handle
+ * @def BME280_Handle
+ * @brief  BME280 API handle
  */
 typedef struct BME280_ConfigType *BME280_Handle;
+
+/**
+ * @def BME280_uint8
+ * @brief 8 bit unsigned integer number
+ */
+typedef unsigned char BME280_uint8;
+
+/**
+ * @def BME280_uint16
+ * @brief 16 bit unsigned integer number
+ */
+typedef unsigned short BME280_uint16;
+
+/**
+ * @def BME280_sint16
+ * @brief 16 bit signed integer number
+ */
+typedef signed short BME280_sint16;
+
+/**
+ * @def BME280_uint32
+ * @brief 32 bit unsigned integer number
+ */
+typedef unsigned long BME280_uint32;
+
+/**
+ * @def BME280_sint32
+ * @brief 32 bit signed integer number
+ */
+typedef signed long BME280_sint32;
+
+/**
+ * @def BME280_float64
+ * @brief 64 bit floating point number
+ */
+typedef double BME280_float64;
+
+/**
+ * @def BME280_SlaveSelectPinID
+ * @brief  Used to specify pin on user target, does not need to be specific, just mapped
+ * 		to the user as a HW pin.
+ */
+typedef char BME280_SlaveSelectPinID;
+
+/**
+ * @def BME280_SlaveSelectPortID
+ * @brief  Used to specify port on user target, does not need to be specific, just mapped
+ * 		to the user as a HW port.
+ */
+typedef char BME280_SlaveSelectPortID;
 
 /**
  * @enum BME280_StandbyTime
@@ -44,7 +74,8 @@ typedef enum {
 	BME280_T_STDBY_500_MS = (0x04), /**< 500ms*/
 	BME280_T_STDBY_1000_MS = (0x05), /**< 1000ms*/
 	BME280_T_STDBY_10_MS = (0x06), /**< 10ms*/
-	BME280_T_STDBY_20_MS = (0x07) /**< 20ms*/
+	BME280_T_STDBY_20_MS = (0x07), /**< 20ms*/
+	BME280_T_STDBY_NOT_SPECIFIED = (0xFF)
 } BME280_StandbyTime;
 
 /**
@@ -56,7 +87,8 @@ typedef enum {
 	BME280_FILTER_COEFF_2 = (0x02), /**<  2		*/
 	BME280_FILTER_COEFF_4 = (0x04), /**<  4		*/
 	BME280_FILTER_COEFF_8 = (0x08), /**<  8		*/
-	BME280_FILTER_COEFF_16 = (0x10) /**<  16		*/
+	BME280_FILTER_COEFF_16 = (0x10), /**<  16		*/
+	BME280_FILTER_NOT_SPECIFIED = (0xFF)
 } BME280_FilterCoeff;
 
 /******************************************************************************
@@ -70,33 +102,43 @@ typedef enum {
 	BME280_OVERSAMPLING_x4 = 0x03, /**<  x4		*/
 	BME280_OVERSAMPLING_x8 = 0x04, /**<  x8		*/
 	BME280_OVERSAMPLING_x16 = 0x05, /**< x16	*/
+	BME280_OVERSAMPLING_NOT_SPECIFIED = (0xFF)
 } BME280_Oversampling_setting;
 
 /**
- * @enum BME280_Result
+ * @enum BME280_Status
  * @brief Enum for API return status states
  *******************************************************************************/
 typedef enum {
-	/** Communication state codes
+
+	BME280_OK = 0, /**< General code for operation success */
+	BME280_IS_INSTANCE = 0xF1, /**< Code indicating that the handle is already an instance in the sensor pool */
+	BME280_FOUND_EMPTY_INSTANCE = 0x50, /**< Code indicating that there is an empty instance found in the sensor pool */
+
+	BME280_NULL_ERROR = 0xFF,/**< General code for null arguments to functions */
+	BME280_COMM_ERROR = 0x0A,/**< General code for communication failure,
+	 not to be confused with users' BME280_Comm_Error
+	 in BME280_Comm_Status which the user uses to implement weak functions
 	 */
-	BME280_OK = 0,
-	BME280_NULL_ERROR = 0xFF,
-	BME280_COMM_ERROR = 0x0A,
-	BME280_NOT_YET_OBTAINED = 0x3F,
-	BME280_NOT_IMPLEMENTED = 0xAC,
-	/**
-	 *  Error codes related to handler
-	 */
-	BME280_POOL_FULL = 0x94,
-	BME280_NOT_INSTANCE = 0x43,
-	BME280_IS_INSTANCE = 0xF1,
-	BME280_FOUND_EMPTY_INSTANCE = 0x50,
-	BME280_NO_INTERFACE_SPECIFIED = 0x58,
-	/**
-	 * Sensor related errors and states
-	 */
-	BME280_SETTING_FAILED = 0x62,
-} BME280_Result;
+	BME280_NOT_YET_OBTAINED = 0x3F, /**< General code used for status flag when the result has not been obtained yet through API functions */
+	BME280_NOT_IMPLEMENTED = 0xAC, /**< General error code for when weak functions are not implemented by the user*/
+	BME280_POOL_FULL = 0x94, /**< Error code indicating that the sensor pool is full */
+	BME280_NOT_INSTANCE = 0x43, /**< Error code indicating that the handle is not an existing instance in the pool*/
+	BME280_NO_INTERFACE_SPECIFIED = 0x58, /**< Error code indicating that there was no communication interface specified, see BME280_setInterfaceType function */
+	BME280_SETTING_FAILED = 0x62, /**< General error code returned if a sensor setting was not set and validated */
+} BME280_Status;
+
+/**
+ * @enum BME280_Comm_Status
+ * @brief Used by the user to return status if communication failed or succeeded
+ * 		based on target implementation. Should be return through weak functions to be
+ * 		implemented by the user.
+ *
+ */
+typedef enum {
+	BME280_Comm_Error,/**< Communication occurred during transmission */
+	BME280_Comm_OK /**< Communication success */
+} BME280_Comm_Status;
 
 /**
  * @enum BME280_ModeType
@@ -105,7 +147,8 @@ typedef enum {
 typedef enum {
 	BME280_Mode_Sleep = 0b00,
 	BME280_Mode_Forced = 0b10,
-	BME280_Mode_Normal = 0b11
+	BME280_Mode_Normal = 0b11,
+	BME280_Mode_Not_Specified = (0xFF)
 } BME280_ModeType;
 
 /**
@@ -128,24 +171,53 @@ typedef enum {
 } BME280_UpdateStatus;
 
 /**
+ * @enum BME280_GPIOState
+ * @brief Used to specify the pin state for slave select pin in SPI mode.
+ *
+ */
+typedef enum {
+	BME280_GPIO_LOW_STATE, BME280_GPIO_HIGH_STATE
+} BME280_GPIOState;
+
+/**
+ * @enum BME280_InterfaceType
+ * @brief Enum for interface used by the sensor
+ */
+typedef enum {
+	BME280_Notation_Double = 0, /**< Selected Double precision number format (64 bit floating point) */
+	BME280_Notation_Fixed = 1, /**< Selected Fixed point number format (32 bit integer number) */
+	BME280_Notation_Not_Specified = (0xFF)
+} BME280_NotationType;
+
+/**
+ * @enum BME280_InterfaceType
+ * @brief Enum for interface used by the sensor
+ */
+typedef enum {
+	BME280_Interface_SPI = 0, /**< Selected SPI interface */
+	BME280_Interface_I2C = 1, /**< Selected I2C interface */
+	BME280_Interface_Not_Specified = (0xFF)
+} BME280_InterfaceType;
+
+/**
  * @struct BME280_Settings
  * @brief Struct that contains sensor user settings
  *
  * 1. BME280_StandbyTime t_stby: 		  Standby time between measurements
  * 2. BME280_FilterCoeff filter: 		  IIR filter coefficient
- * 3. BME280_Oversampling_setting osrs_t: Oversampling multiplier for temperature
- * 4. BME280_Oversampling_setting osrs_p: Oversampling multiplier for temperature
- * 5. BME280_Oversampling_setting osrs_h: Oversampling multiplier for humidity
+ * 3. BME280_Oversampling_setting osrs_t: Over-sampling multiplier for temperature
+ * 4. BME280_Oversampling_setting osrs_p: Over-sampling multiplier for temperature
+ * 5. BME280_Oversampling_setting osrs_h: Over-sampling multiplier for humidity
  * 6. BME280_ModeType Mode: 	 		  Sensor mode (sleep, forced, normal)
  *
  */
 typedef struct {
-	BME280_ModeType Mode; /* Specifies the current mode for BME280 */
-	BME280_StandbyTime t_stby; /* Standby time of sensor*/
-	BME280_FilterCoeff filter;
-	BME280_Oversampling_setting osrs_t;
-	BME280_Oversampling_setting osrs_p;
-	BME280_Oversampling_setting osrs_h;
+	BME280_ModeType Mode; /**< Specifies the current mode for BME280 */
+	BME280_StandbyTime t_stby; /**< Standby time of sensor*/
+	BME280_FilterCoeff filter; /**< Filter coefficient*/
+	BME280_Oversampling_setting osrs_t;/**< Temperature over-sampling setting*/
+	BME280_Oversampling_setting osrs_p;/**< Pressure over-sampling setting*/
+	BME280_Oversampling_setting osrs_h;/**< Humidityover-sampling setting*/
 } BME280_Settings;
 
 /*******************************************************************************
@@ -153,30 +225,52 @@ typedef struct {
  *******************************************************************************/
 
 /**
- * @fn BME280_Result BME280_init(BME280_Handle *cfgPtr)
+ * @fn BME280_Status BME280_getInstance(BME280_Handle*)
+ * @brief Obtains an instance from the sensor pool if there is an available instance.
+ * 		Instance is uninitialized and must be initialized by calling BME280_init function
+ * 		to verify and initialize the sensor.
+ *
+ * 		_Note: If handle is already an occupied instance, the handle is unchanged.
+ *
+ * @param a_cfgPtr	Pointer to sensor handle
+ * @return Instance for an available sensor in the pool.
+ */
+BME280_Status BME280_getInstance(BME280_Handle *a_cfgPtr);
+
+/**
+ * @fn BME280_Status BME280_setInterfaceType(BME280_Handle*, BME280_InterfaceType)
+ * @brief API to set interface type (I2C/SPI) before initializing the sensor. Must be set
+ * 		according to the used interface before calling any sensor functions.
+ *
+ * @param a_cfgPtr 	Pointer to sensor handle.
+ * @param a_intf	Interface type selected. See BME280_InterfaceType enum.
+ * @return
+ */
+BME280_Status BME280_setInterfaceType(BME280_Handle *a_cfgPtr,
+		BME280_InterfaceType a_intf);
+
+/**
+ * @fn BME280_Status BME280_init(BME280_Handle *a_cfgPtr)
  * @brief Initialization function for the BME280 sensor
  * 		  - Initializes sensor by reading its chip ID and soft-resetting it
  *		  - Returns an empty handle for a new sensor (if pool limit is not reached)
- * @param cfgPtr		 Pointer to the sensor configuration struct
- * @param interfaceType  Sensor interface type from BME280_InterfaceType enumerations
- * @return BME280_Result
+ * @param a_cfgPtr		 Pointer to the sensor configuration struct
+ * @return BME280_Status
  */
-BME280_Result BME280_init(
-		BME280_Handle *cfgPtr, BME280_InterfaceType interfaceType);
+BME280_Status BME280_init(BME280_Handle *a_cfgPtr);
 
 /**
- * @fn BME280_Result BME280_softReset(BME280_Handle *cfgPtr)
+ * @fn BME280_Status BME280_softReset(BME280_Handle *a_cfgPtr)
  * @brief Soft-resets the sensor by writing the reset byte into
  * reset register
 
- * @param cfgPtr: Pointer to the sensor configuration struct
- * @return BME280_Result
+ * @param a_cfgPtr: Pointer to the sensor configuration struct
+ * @return BME280_Status
  */
-BME280_Result BME280_softReset(
-		BME280_Handle *cfgPtr);
+BME280_Status BME280_softReset(BME280_Handle *a_cfgPtr);
 
 /**
- * @fn uint16 BME280_calculateMeasurementDelayMs(BME280_Settings*)
+ * @fn BME280_uint16 BME280_calculateMeasurementDelayMs(BME280_Settings*)
  * @brief Calculates measurement time needed by the sensor to
  * 		finish conversion based on the selected settings.
  *
@@ -187,305 +281,330 @@ BME280_Result BME280_softReset(
  * 				- Over-sampling settings for all parameters
  * @return
  */
-uint16 BME280_calculateMeasurementDelayMs(
-		BME280_Settings *a_settings);
+BME280_uint16 BME280_calculateMeasurementDelayMs(BME280_Settings *a_settings);
 
 /**
- * @fn uint8 BME280_getChipID(BME280_Handle*)
+ * @fn BME280_uint8 BME280_getChipID(BME280_Handle*)
  * @brief Reads chip ID from the sensor.
  *
- * @param cfgPtr Pointer to sensor handle
- * @param chipID Pointer to variable to receive the ID in
+ * @param a_cfgPtr Pointer to sensor handle
+ * @param a_chipID Pointer to variable to receive the ID in
  * @return
  */
-uint8 BME280_getChipID(
-		BME280_Handle *cfgPtr,
-		uint8 *chipID);
-
-#if BME280_FLOATING_POINT ==BME280_FEATURE_ENABLE
+BME280_uint8 BME280_getChipID(BME280_Handle *a_cfgPtr, BME280_uint8 *a_chipID);
 
 /**
- * @fn BME280_Result BME280_getTemperature_floatingPoint(BME280_Handle*, float64*)
+ * @fn BME280_Status BME280_getTemperature_floatingPoint(BME280_Handle*, BME280_float64*)
  * @brief
  *
- * @param cfgPtr		Pointer to sensor handle
- * @param temperature	Pointer to variable to store the temperature in as floating point (double)
+ * @param a_cfgPtr		Pointer to sensor handle
+ * @param a_temperature	Pointer to variable to store the temperature in as floating point (double)
  * @return
  */
-BME280_Result BME280_getTemperature_floatingPoint(
-		BME280_Handle *cfgPtr,
-		float64 *temperature);
+BME280_Status BME280_getTemperature_floatingPoint(BME280_Handle *a_cfgPtr,
+		BME280_float64 *a_temperature);
 
 /**
- * @fn BME280_Result BME280_getPressure_floatingPoint(BME280_Handle*, float64*)
+ * @fn BME280_Status BME280_getPressure_floatingPoint(BME280_Handle*, BME280_float64*)
  * @brief
  *
- * @param cfgPtr		Pointer to sensor handle
- * @param pressure 		Pointer to variable to store the pressure in as floating point (double)
+ * @param a_cfgPtr		Pointer to sensor handle
+ * @param a_pressure 		Pointer to variable to store the pressure in as floating point (double)
  * @return
  */
-BME280_Result BME280_getPressure_floatingPoint(
-		BME280_Handle *cfgPtr,
-		float64 *pressure);
+BME280_Status BME280_getPressure_floatingPoint(BME280_Handle *a_cfgPtr,
+		BME280_float64 *a_pressure);
 
 /**
- * @fn BME280_Result BME280_getHumidity_floatingPoint(BME280_Handle*, float64*)
+ * @fn BME280_Status BME280_getHumidity_floatingPoint(BME280_Handle*, BME280_float64*)
  * @brief
  *
- * @param cfgPtr		Pointer to sensor handle
- * @param humidity		Pointer to variable to store the humidity in as floating point (double)
+ * @param a_cfgPtr		Pointer to sensor handle
+ * @param a_humidity		Pointer to variable to store the humidity in as floating point (double)
  * @return
  */
-BME280_Result BME280_getHumidity_floatingPoint(
-		BME280_Handle *cfgPtr,
-		float64 *humidity);
-#endif
-
-#if BME280_FIXED_POINT == BME280_FEATURE_ENABLE
-/**
- * @fn BME280_Result BME280_getTemperature_fixedPoint(BME280_Handle*, sint32*)
- * @brief
- *
- * @param cfgPtr		Pointer to sensor handle
- * @param temperature	Pointer to variable to store the temperature in as fixed point (signed 32 bit int)
- * @return
- */
-BME280_Result BME280_getTemperature_fixedPoint(
-		BME280_Handle *cfgPtr,
-		sint32 *temperature);
+BME280_Status BME280_getHumidity_floatingPoint(BME280_Handle *a_cfgPtr,
+		BME280_float64 *a_humidity);
 
 /**
- * @fn BME280_Result BME280_getPressure_fixedPoint(BME280_Handle*, uint32*)
+ * @fn BME280_Status BME280_getTemperature_fixedPoint(BME280_Handle*, BME280_sint32*)
  * @brief
  *
- * @param cfgPtr		Pointer to sensor handle
- * @param pressure 		Pointer to variable to store the pressure in as fixed point (unsigned 32 bit int)
+ * @param a_cfgPtr		Pointer to sensor handle
+ * @param a_temperature	Pointer to variable to store the temperature in as fixed point (signed 32 bit int)
  * @return
  */
-BME280_Result BME280_getPressure_fixedPoint(
-		BME280_Handle *cfgPtr,
-		uint32 *pressure);
+BME280_Status BME280_getTemperature_fixedPoint(BME280_Handle *a_cfgPtr,
+		BME280_sint32 *a_temperature);
 
 /**
- * @fn BME280_Result BME280_getHumidity_fixedPoint(BME280_Handle*, uint32*)
+ * @fn BME280_Status BME280_getPressure_fixedPoint(BME280_Handle*, BME280_uint32*)
  * @brief
  *
- * @param cfgPtr		Pointer to sensor handle
- * @param humidity		Pointer to variable to store the humidity in as fixed point (unsigned 32 bit int)
+ * @param a_cfgPtr		Pointer to sensor handle
+ * @param a_pressure 		Pointer to variable to store the pressure in as fixed point (unsigned 32 bit int)
  * @return
  */
-BME280_Result BME280_getHumidity_fixedPoint(
-		BME280_Handle *cfgPtr,
-		uint32 *humidity);
-#endif
+BME280_Status BME280_getPressure_fixedPoint(BME280_Handle *a_cfgPtr,
+		BME280_uint32 *a_pressure);
+
+/**
+ * @fn BME280_Status BME280_getHumidity_fixedPoint(BME280_Handle*, BME280_uint32*)
+ * @brief
+ *
+ * @param a_cfgPtr		Pointer to sensor handle
+ * @param a_humidity		Pointer to variable to store the humidity in as fixed point (unsigned 32 bit int)
+ * @return
+ */
+BME280_Status BME280_getHumidity_fixedPoint(BME280_Handle *a_cfgPtr,
+		BME280_uint32 *a_humidity);
+
 /* Getter functions for registers and settings */
 
 /**
- * @fn BME280_Result BME280_getUpdateStatus(BME280_Handle*, BME280_UpdateStatus*)
+ * @fn BME280_Status BME280_getUpdateStatus(BME280_Handle*, BME280_UpdateStatus*)
  * @brief
  *
- * @param cfgPtr 		Pointer to sensor handle
- * @param updateFlag	Pointer to update status variable which will contain the update status
+ * @param a_cfgPtr 		Pointer to sensor handle
+ * @param a_updateFlag	Pointer to update status variable which will contain the update status
  * @return
  */
-BME280_Result BME280_getUpdateStatus(
-		BME280_Handle *cfgPtr,
-		BME280_UpdateStatus *updateFlag);
+BME280_Status BME280_getUpdateStatus(BME280_Handle *a_cfgPtr,
+		BME280_UpdateStatus *a_updateFlag);
 
 /**
- * @fn BME280_Result BME280_getMeasuringStatus(BME280_Handle*, BME280_MeasuringStatus*)
+ * @fn BME280_Status BME280_getMeasuringStatus(BME280_Handle*, BME280_MeasuringStatus*)
  * @brief
  *
- * @param cfgPtr 		Pointer to sensor handle
- * @param measureFlag	Pointer to update status variable which will contain the measuring status
+ * @param a_cfgPtr 		Pointer to sensor handle
+ * @param a_measureFlag	Pointer to update status variable which will contain the measuring status
  * @return
  */
-BME280_Result BME280_getMeasuringStatus(
-		BME280_Handle *cfgPtr,
-		BME280_MeasuringStatus *measureFlag);
+BME280_Status BME280_getMeasuringStatus(BME280_Handle *a_cfgPtr,
+		BME280_MeasuringStatus *a_measureFlag);
 
 /**
- * @fn BME280_Result BME280_getMode(BME280_Handle*, BME280_ModeType*)
+ * @fn BME280_Status BME280_getMode(BME280_Handle*, BME280_ModeType*)
  * @brief
  *
- * @param cfgPtr 		Pointer to sensor handle
- * @param mode			Pointer to measure status variable which will contain the sensor mode
+ * @param a_cfgPtr 		Pointer to sensor handle
+ * @param a_mode		Pointer to measure status variable which will contain the sensor mode
  * @return
  */
-BME280_Result BME280_getMode(
-		BME280_Handle *cfgPtr,
-		BME280_ModeType *mode);
-
+BME280_Status BME280_getMode(BME280_Handle *a_cfgPtr, BME280_ModeType *a_mode);
 
 /**
- * @fn BME280_Result BME280_getSensorSettings(BME280_Handle*, BME280_Settings*)
+ * @fn BME280_Status BME280_getSensorSettings(BME280_Handle*, BME280_Settings*)
  * @brief
  *
- * @param cfgPtr
- * @param settings
+ * @param a_cfgPtr	Pointer to sensor handle
+ * @param a_settings Pointer to settings variable which will be filled with current sensor settings
  * @return
  */
-BME280_Result BME280_getSensorSettings(
-		BME280_Handle *cfgPtr,
-		BME280_Settings *settings);
+BME280_Status BME280_getSensorSettings(BME280_Handle *a_cfgPtr,
+		BME280_Settings *a_settings);
 
 /**
- * @fn BME280_Result BME280_getTemperatureOversampling(BME280_Handle*, BME280_Oversampling_setting*)
+ * @fn BME280_Status BME280_getTemperatureOversampling(BME280_Handle*, BME280_Oversampling_setting*)
  * @brief
  *
- * @param cfgPtr 		Pointer to sensor handle
- * @param oversampling	Pointer to variable which will contain the temperature oversampling setting
+ * @param a_cfgPtr 		Pointer to sensor handle
+ * @param a_oversampling	Pointer to variable which will contain the temperature oversampling setting
  * @return
  */
-BME280_Result BME280_getTemperatureOversampling(
-		BME280_Handle *cfgPtr,
-		BME280_Oversampling_setting *oversampling);
+BME280_Status BME280_getTemperatureOversampling(BME280_Handle *a_cfgPtr,
+		BME280_Oversampling_setting *a_oversampling);
 
 /**
- * @fn BME280_Result BME280_getPressureOversampling(BME280_Handle*, BME280_Oversampling_setting*)
+ * @fn BME280_Status BME280_getPressureOversampling(BME280_Handle*, BME280_Oversampling_setting*)
  * @brief
  *
- * @param cfgPtr 		Pointer to sensor handle
- * @param oversampling	Pointer to variable which will contain the pressure oversampling setting
+ * @param a_cfgPtr 		Pointer to sensor handle
+ * @param a_oversampling	Pointer to variable which will contain the pressure oversampling setting
  * @return
  */
-BME280_Result BME280_getPressureOversampling(
-		BME280_Handle *cfgPtr,
-		BME280_Oversampling_setting *oversampling);
+BME280_Status BME280_getPressureOversampling(BME280_Handle *a_cfgPtr,
+		BME280_Oversampling_setting *a_oversampling);
 
 /**
- * @fn BME280_Result BME280_getHumidityOversampling(BME280_Handle*, BME280_Oversampling_setting*)
+ * @fn BME280_Status BME280_getHumidityOversampling(BME280_Handle*, BME280_Oversampling_setting*)
  * @brief
  *
- * @param cfgPtr 		Pointer to sensor handle
- * @param oversampling	Pointer to variable which will contain the humidity oversampling setting
+ * @param a_cfgPtr 		Pointer to sensor handle
+ * @param a_oversampling	Pointer to variable which will contain the humidity oversampling setting
  * @return
  */
-BME280_Result BME280_getHumidityOversampling(
-		BME280_Handle *cfgPtr,
-		BME280_Oversampling_setting *oversampling);
+BME280_Status BME280_getHumidityOversampling(BME280_Handle *a_cfgPtr,
+		BME280_Oversampling_setting *a_oversampling);
 
 /**
- * @fn BME280_Result BME280_getFilterCoefficient(BME280_Handle*, BME280_FilterCoeff*)
+ * @fn BME280_Status BME280_getFilterCoefficient(BME280_Handle*, BME280_FilterCoeff*)
  * @brief
  *
- * @param cfgPtr 		Pointer to sensor handle
- * @param filterCoeff	Pointer to variable which will contain the filter coefficient setting
+ * @param a_cfgPtr 		Pointer to sensor handle
+ * @param a_filterCoeff	Pointer to variable which will contain the filter coefficient setting
  * @return
  */
-BME280_Result BME280_getFilterCoefficient(
-		BME280_Handle *cfgPtr,
-		BME280_FilterCoeff *filterCoeff);
+BME280_Status BME280_getFilterCoefficient(BME280_Handle *a_cfgPtr,
+		BME280_FilterCoeff *a_filterCoeff);
 
 /**
- * @fn BME280_Result BME280_getStandbyTime(BME280_Handle*, BME280_StandbyTime*)
+ * @fn BME280_Status BME280_getStandbyTime(BME280_Handle*, BME280_StandbyTime*)
  * @brief
  *
- * @param cfgPtr 		Pointer to sensor handle
- * @param standbyTime	Pointer to variable which will contain the sensor standby time
+ * @param a_cfgPtr 		Pointer to sensor handle
+ * @param a_standbyTime	Pointer to variable which will contain the sensor standby time
  * @return
  */
-BME280_Result BME280_getStandbyTime(
-		BME280_Handle *cfgPtr,
-		BME280_StandbyTime *standbyTime);
+BME280_Status BME280_getStandbyTime(BME280_Handle *a_cfgPtr,
+		BME280_StandbyTime *a_standbyTime);
 
 /* Setter functions for registers and settings */
 
 /**
- * @fn BME280_Result BME280_setPressureOversampling(BME280_Handle*, BME280_Oversampling_setting)
+ * @fn BME280_Status BME280_setPressureOversampling(BME280_Handle*, BME280_Oversampling_setting)
  * @brief
  *
- * @param cfgPtr Pointer to sensor handle
- * @param pressureOversampling
- * @return
+ * @param a_cfgPtr Pointer to sensor handle
+ * @param a_pressureOversampling
+ * @return Sets pressure over-sampling setting and status flag if operation succeeded
  */
-BME280_Result BME280_setPressureOversampling(
-		BME280_Handle *cfgPtr,
-		BME280_Oversampling_setting pressureOversampling);
+BME280_Status BME280_setPressureOversampling(BME280_Handle *a_cfgPtr,
+		BME280_Oversampling_setting a_pressureOversampling);
 
 /**
- * @fn BME280_Result BME280_setTemperatureOversampling(BME280_Handle*, BME280_Oversampling_setting)
+ * @fn BME280_Status BME280_setTemperatureOversampling(BME280_Handle*, BME280_Oversampling_setting)
  * @brief
  *
- * @param cfgPtr Pointer to sensor handle
- * @param temperatureOversampling
- * @return
+ * @param a_cfgPtr Pointer to sensor handle
+ * @param a_temperatureOversampling
+ * @return Sets temperature over-sampling setting and status flag if operation succeeded
  */
-BME280_Result BME280_setTemperatureOversampling(
-		BME280_Handle *cfgPtr,
-		BME280_Oversampling_setting temperatureOversampling);
+BME280_Status BME280_setTemperatureOversampling(BME280_Handle *a_cfgPtr,
+		BME280_Oversampling_setting a_temperatureOversampling);
 /**
- * @fn BME280_Result BME280_setHumidityOversampling(BME280_Handle*, BME280_Oversampling_setting)
+ * @fn BME280_Status BME280_setHumidityOversampling(BME280_Handle*, BME280_Oversampling_setting)
  * @brief
  *
- * @param cfgPtr Pointer to sensor handle
- * @param humidityOversampling
- * @return
+ * @param a_cfgPtr Pointer to sensor handle
+ * @param a_humidityOversampling
+ * @return Sets humidity over-sampling setting and status flag if operation succeeded
  */
-BME280_Result BME280_setHumidityOversampling(
-		BME280_Handle *cfgPtr,
-		BME280_Oversampling_setting humidityOversampling);
+BME280_Status BME280_setHumidityOversampling(BME280_Handle *a_cfgPtr,
+		BME280_Oversampling_setting a_humidityOversampling);
 
 /**
- * @fn BME280_Result BME280_setStandbyTime(BME280_Handle*, BME280_StandbyTime)
+ * @fn BME280_Status BME280_setStandbyTime(BME280_Handle*, BME280_StandbyTime)
  * @brief
  *
- * @param cfgPtr Pointer to sensor handle
- * @param standbyTime
- * @return
+ * @param a_cfgPtr Pointer to sensor handle
+ * @param a_standbyTime
+ * @return Sets standby time and status flag if operation succeeded
  */
-BME280_Result BME280_setStandbyTime(
-		BME280_Handle *cfgPtr,
-		BME280_StandbyTime standbyTime);
+BME280_Status BME280_setStandbyTime(BME280_Handle *a_cfgPtr,
+		BME280_StandbyTime a_standbyTime);
 
 /**
- * @fn BME280_Result BME280_setMode(BME280_Handle*, BME280_ModeType)
+ * @fn BME280_Status BME280_setMode(BME280_Handle*, BME280_ModeType)
  * @brief
  *
- * @param cfgPtr Pointer to sensor handle
- * @param mode
- * @return
+ * @param a_cfgPtr Pointer to sensor handle
+ * @param a_mode
+ * @return Sets mode and status flag if operation succeeded
  */
-BME280_Result BME280_setMode(
-		BME280_Handle *cfgPtr,
-		BME280_ModeType mode);
+BME280_Status BME280_setMode(BME280_Handle *a_cfgPtr, BME280_ModeType a_mode);
 
 /**
- * @fn BME280_Result BME280_setFilterCoefficient(BME280_Handle*, BME280_FilterCoeff)
+ * @fn BME280_Status BME280_setFilterCoefficient(BME280_Handle*, BME280_FilterCoeff)
  * @brief
  *
- * @param cfgPtr Pointer to sensor handle
- * @param filterCoeff
- * @return
+ * @param a_cfgPtr Pointer to sensor handle
+ * @param a_filterCoeff
+ * @return	Sets filter coefficient and status flag if operation succeeded
  */
-BME280_Result BME280_setFilterCoefficient(
-		BME280_Handle *cfgPtr,
-		BME280_FilterCoeff filterCoeff);
+BME280_Status BME280_setFilterCoefficient(BME280_Handle *a_cfgPtr,
+		BME280_FilterCoeff a_filterCoeff);
 
 /**
- * @fn BME280_Result BME280_SPI_TransmitReceive(uint8*, uint8*, uint16, uint16)
+ * @fn BME280_Status BME280_DeInit(BME280_Handle*)
+ * @brief	De-initializes sensor for the passed handle.
+ * 			De-init sequence is:
+ *
+ * 			1. Set sensor mode to sleep mode
+ * 			2. Soft reset the sensor to restore default register values
+ * 			3. Lets handle point to NULL.
+ *
+ * 		 	__Note: Does nothing if the handle is NULL or already de-initialized.
+ *
+ * @param a_cfgPtr
+ * @return	a_cfgPtr is NULL and status flag
+ */
+BME280_Status BME280_DeInit(BME280_Handle *a_cfgPtr);
+
+/**
+ * @fn BME280_Status BME280_SPI_setSlaveSelectPin(BME280_Handle*, BME280_SlaveSelectPinID)
+ * @brief Sets the pin for the sensor passed, so it can be used by the sensor API to
+ * 		set SS pin.
+ *
+ * @param a_cfgPtr	Pointer to sensor handle
+ * @param a_pin		ID for pin (User dependent)
+ * @return
+ */
+BME280_Status BME280_SPI_setSlaveSelectPin(BME280_Handle *a_cfgPtr,
+		BME280_SlaveSelectPinID a_pin);
+
+/**
+ * @fn BME280_Status BME280_SPI_setSlaveSelectPort(BME280_Handle*, BME280_SlaveSelectPinID)
+ * @brief Sets the port for the sensor passed, so it can be used by the sensor API to
+ * 		set SS pin.
+ *
+ * @param a_cfgPtr	Pointer to sensor handle
+ * @param a_port	ID for port (User dependent)
+ * @return
+ */
+BME280_Status BME280_SPI_setSlaveSelectPort(BME280_Handle *a_cfgPtr,
+		BME280_SlaveSelectPinID a_port);
+
+/**
+ * @fn BME280_Comm_Status BME280_SPI_TransmitReceive(BME280_uint8*, BME280_uint8*, BME280_uint16, BME280_uint16)
  * @brief SPI transmit and receive function used to read from SPI interface. Implementation
  * 		is up to the user and target hardware.
+ *
+ *		** Must be implemented by the user. **
  *
  * @param txData  Pointer to data to be transmitted.
  * @param rxData  Pointer to buffer to receive data in.
  * @param size    Number of bytes to send & receive.
  * @param timeout Timeout in milliseconds
- * @return
+ * @return BME280_Comm_Status
  */
-extern BME280_Result BME280_SPI_TransmitReceive(
-		uint8 *txData,
-		uint8 *rxData,
-		uint16 size,
-		uint32 timeout);
+extern BME280_Comm_Status BME280_SPI_TransmitReceive(BME280_uint8 *txData,
+		BME280_uint8 *rxData, BME280_uint16 size, BME280_uint32 timeout);
 
 /**
- * @fn void BME280_delayMs(uint16)
+ * @fn BME280_Status BME280_delayMs(BME280_uint16)
  * @brief Function that implements the delay passed to it in milliseconds. Used in
  * 		internal communication sensor functions as some functions need delay.
  *
+ *		** Must be implemented by the user. **
+ *
  * @param a_milliseconds
  */
-extern void BME280_delayMs(
-		uint32 a_milliseconds);
+extern BME280_Status BME280_delayMs(BME280_uint32 a_milliseconds);
+
+/**
+ * @fn BME280_Status BME280_GPIO_WriteSlaveSelectPin(BME280_SlaveSelectPinID, BME280_SlaveSelectPortID, BME280_GPIOState)
+ * @brief Used in SPI mode to toggle Slave select pin
+ * 		when needing to transmit.
+ *
+ * 		** Must be implemented by the user. **
+ * @param a_pin Pin which is connected to the sensor for SPI slave select
+ * @param a_port Port on which the pin is connected to the sensor for SPI slave select
+ * @param a_state	GPIO pin state to be selected from BME280_GPIOState enum
+ * @return Status if operation succeeded
+ */
+extern BME280_Status BME280_GPIO_WriteSlaveSelectPin(
+		BME280_SlaveSelectPinID a_pin, BME280_SlaveSelectPortID a_port,
+		BME280_GPIOState a_state);
+
 #endif /* BME280_DRIVER_BME280_H_ */
