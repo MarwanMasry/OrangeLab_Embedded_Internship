@@ -39,7 +39,7 @@ else
 
 ```C
    /* Here we fitst supply teh interface type first */
-	 result = BME_280_setInterfaceProtocol(&handler1, BME_280_INTERFACE_SPI);
+   result = BME_280_setInterfaceProtocol(&handler1, BME_280_INTERFACE_SPI);
    /* Then in case of using SPI, the user must supply the port number and the pin number that is specific to the user MCU
     * Here the example that both port/pin number are 16
     */
@@ -59,46 +59,46 @@ if(result!=BME280_OK)
     
     /* IF the return of the these APIs is BME280_OK then every operation is done successfully */
     result = BME_280_SetTempOverSamplingSetting(&handler1, OVERSAMPLING_2);
-		result = BME_280_SetPressureOverSamplingSetting(&handler1, OVERSAMPLING_4);
-		result = BME_280_SetHumidityOverSamplingSetting(&handler1, OVERSAMPLING_8);
-		result = BME_280_SetFilterSettings(&handler1, _4);
+    result = BME_280_SetPressureOverSamplingSetting(&handler1, OVERSAMPLING_4);
+    result = BME_280_SetHumidityOverSamplingSetting(&handler1, OVERSAMPLING_8);   
+    result = BME_280_SetFilterSettings(&handler1, _4);
 
-		result = BME_280_SetMode(&handler1, NORMAL_MODE);
-		result = BME_280_SetStandbyTime(&handler1,_125_MS);
+    result = BME_280_SetMode(&handler1, NORMAL_MODE);
+    result = BME_280_SetStandbyTime(&handler1,_125_MS);
 
     /* This API is helpful to make sure that all the setting set by the user is successfully set, also the user can rely on the status return of each of the above     
      * APIs 
      */
     BME_280_settings settings;
-		result = BME_280_getSensorSettings(&handler1, &settings);
+    result = BME_280_getSensorSettings(&handler1, &settings);
 ```
 6. Finally, readings can be obtained and processed.
 
 ```C		
     /* Declare variables for Sensor Readings */
-		BME_280_TempType_fixedPoint  temp_fixed = 0;
-		BME_280_TempType_floatingPoint  temp_float = 0;
+    BME_280_TempType_fixedPoint  temp_fixed = 0;
+    BME_280_TempType_floatingPoint  temp_float = 0;
 
-		BME_280_PressureType_fixedPoint  pressure_fixed = 0;
-		BME_280_PressureType_floatingPoint pressure_float = 0;
+   BME_280_PressureType_fixedPoint  pressure_fixed = 0;
+   BME_280_PressureType_floatingPoint pressure_float = 0;
 
-		BME_280_HumidityType_fixedPoint  humidity_fixed = 0;
-		BME_280_HumidityType_floatingPoint humidity_float = 0;
+   BME_280_HumidityType_fixedPoint  humidity_fixed = 0;
+   BME_280_HumidityType_floatingPoint humidity_float = 0;
 
     /* Finally get the reading of the functions using these APIs and  If the return of the these APIs is BME280_OK then every operation is done successfully */
     result = BME_280_getTemperature_fixedPoint(&handler1, &temp_fixed);
-		result = BME_280_getTemperature_floatingPoint(&handler1, &temp_float);
+    result = BME_280_getTemperature_floatingPoint(&handler1, &temp_float);
 
-		result = BME_280_getPressure_fixedPoint(&handler1, &pressure_fixed);
-		result = BME_280_getPressure_floatingPoint(&handler1, &pressure_float);
+    result = BME_280_getPressure_fixedPoint(&handler1, &pressure_fixed);
+    result = BME_280_getPressure_floatingPoint(&handler1, &pressure_float);
 
-		result = BME_280_getHumidity_fixedPoint(&handler1, &humidity_fixed);
-		result = BME_280_getHumidity_floatingPoint(&handler1, &humidity_float);
+   result = BME_280_getHumidity_fixedPoint(&handler1, &humidity_fixed);
+   result = BME_280_getHumidity_floatingPoint(&handler1, &humidity_float);
 
 ```
 6. After finishing communicating with the sensor make sure to de-Init your handler to free your instance and free resouorces for others.
 
 ```C		
- 		result = BME_280_DeInit(&handler1);
+   result = BME_280_DeInit(&handler1);
 ```
 
