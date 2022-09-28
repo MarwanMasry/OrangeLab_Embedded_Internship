@@ -9,10 +9,9 @@ This driver was developed for Bosch Sensortec BME280 Sensor. It measures tempera
 Before using the driver at all, several functions must be implemented by the user as they are target specific. These functions are in the bme280.h file at the very end. They are defined as weak functions to be implemented according to the user.
 These functions are:
   - BME_280_SPI_TransmitReceive
-  - BME_280_GPIO_WritePin
   - BME_280_Delay
 
-Example of implemntations of the weak functions can be found in the main.c file on the Demo Project Directory, also in this demo there is example of reading Temperature, pressure and humidity in Fixed/Floating point, I recommend to go through the demo project after reading the below steps.
+Example of implemntations of the weak functions can be found in the main.c file on the Demo Project Directory that is based on  STM32WB55xG MCU, also in this demo there is example of reading Temperature, pressure and humidity in Fixed/Floating point, I recommend to go through the demo project after reading the below steps.
 
 ### Steps
 1. Define a sensor handle like so, this is the instance which will be used to specifically communicate with the sensor if multiple exist.
@@ -35,16 +34,19 @@ else
 }
 
 ```
-3. After an instance has been obtained successfully, we must specify the interface type and setup specific options, for example if we are using SPI:
+3. After an instance has been obtained successfully, we must specify the interface type and the user must set call back functions for both setting and reseting the slave select pin, for example if we are using SPI:
 
 ```C
    /* Here we fitst supply teh interface type first */
    result = BME_280_setInterfaceProtocol(&handler1, BME_280_INTERFACE_SPI);
-   /* Then in case of using SPI, the user must supply the port number and the pin number that is specific to the user MCU
-    * Here the example that both port/pin number are 16
-    */
-   result = BME_280_setNssPinConfiguration(&handler1, 16, 16);
-
+   
+   /* Then in case of using SPI, the user must supply the functions [set_CS_pin,reset_CS_pin]  that control the slave select pin 
+    * that is specific to the user MCU
+    */ 
+   	result = BME_280_SetAssertSlaveSelectCallback(&handler1,  set_CS_pin);
+		result = BME_280_SetReleaseSlaveSelectCallback(&handler1, reset_CS_pin);
+   
+  
 ```
 4. After these steps have been completed successfully without any errors, the user can init the sensor and check if communication is successful.
 
