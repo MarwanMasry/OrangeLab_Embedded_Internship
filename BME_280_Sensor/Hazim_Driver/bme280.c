@@ -7,8 +7,7 @@
 #include <bme280_private_defs.h>
 #include <bme280_private_types.h>
 #include "bme280.h"
-#include "stm32wbxx_hal.h"
-
+#include <std_types.h>
 /*******************************************************************************
  *                          Private global variables						   *
  *******************************************************************************/
@@ -50,31 +49,53 @@ static BME280_Status BME280_Write(BME280_Handle *a_cfgPtr,
 		BME280_uint8 a_regAddr, BME280_uint8 data_byte);
 
 /**
- * @fn BME280_Status BME280_SPI_ReadWrapper(SPI_HandleTypeDef*, BME280_uint8, BME280_uint8*, BME280_uint8)
- * @brief Wraps HAL_SPI functions to be used according to the
- * selected interface
- * @param a_cfgPtr
- * @param a_regAddr: Register address to read from the sensor
- * @param recv_buff: Buffer to read data into
- * @param len: Length of data to read
+ * @fn BME280_Status BME280_SPI_ReadWrapper(BME280_Handle*, BME280_uint8, BME280_uint8*, BME280_uint8)
+ * @brief	Wraps user implemented SPI write function to be used when sensor is in I2C interface.
  *
- * @return BME280_Status
+ * @param a_cfgPtr		Pointer to sensor handle
+ * @param a_regAddr		Address of register to read from in the sensor
+ * @param a_recvBuff	Receive buffer to receive data in
+ * @param a_len			Number of bytes to receive into a_recvBuff
+ * @return
  */
 static BME280_Status BME280_SPI_ReadWrapper(BME280_Handle *a_cfgPtr,
 		BME280_uint8 a_regAddr, BME280_uint8 *a_recvBuff, BME280_uint8 a_len);
 
 /**
- * @fn BME280_Status BME280_SPI_WriteWrapper(SPI_HandleTypeDef*, BME280_uint8, BME280_uint8)
- * @brief Wraps HAL_SPI functions to be used according to the
- * selected interface
+ * @fn BME280_Status BME280_SPI_WriteWrapper(BME280_Handle*, BME280_uint8, BME280_uint8)
+ * @brief	Wraps user implemented SPI write function to be used when sensor is in I2C interface.
  *
- * @param a_cfgPtr
- * @param a_regAddr: Register to write to
- * @param data_byte: Data to write to the register
- *
- * @return BME280_Status
+ * @param a_cfgPtr		Pointer to sensor handle
+ * @param a_regAddr		Address of register to read from in the sensor
+ * @param a_dataByte	Data byte to write at register in the sensor
+ * @return
  */
 static BME280_Status BME280_SPI_WriteWrapper(BME280_Handle *a_cfgPtr,
+		BME280_uint8 a_regAddr, BME280_uint8 a_dataByte);
+
+/**
+ * @fn BME280_Status BME280_I2C_ReadWrapper(BME280_Handle*, BME280_uint8, BME280_uint8*, BME280_uint8)
+ * @brief	Wraps user implemented I2C read function to be used when sensor is in I2C interface.
+ *
+ * @param a_cfgPtr		Pointer to sensor handle
+ * @param a_regAddr		Address of register to read from in the sensor
+ * @param a_recvBuff	Receive buffer to receive data in
+ * @param a_len			Number of bytes to receive into a_recvBuff
+ * @return
+ */
+static BME280_Status BME280_I2C_ReadWrapper(BME280_Handle *a_cfgPtr,
+		BME280_uint8 a_regAddr, BME280_uint8 *a_recvBuff, BME280_uint8 a_len);
+
+/**
+ * @fn BME280_Status BME280_I2C_WriteWrapper(BME280_Handle*, BME280_uint8, BME280_uint8)
+ * @brief 	Wraps user implemented I2C write function to be used when sensor is in I2C interface.
+ *
+ * @param a_cfgPtr		Pointer to sensor handle
+ * @param a_regAddr		Address of register to read from in the sensor
+ * @param a_dataByte	Data byte to write at register in the sensor
+ * @return
+ */
+static BME280_Status BME280_I2C_WriteWrapper(BME280_Handle *a_cfgPtr,
 		BME280_uint8 a_regAddr, BME280_uint8 a_dataByte);
 
 /**
@@ -259,23 +280,25 @@ static void BME280_DeInitHandle(BME280_Handle *a_cfgPtr);
 
 static BME280_Status BME280_SPI_ReadWrapper(BME280_Handle *a_cfgPtr,
 		BME280_uint8 a_regAddr, BME280_uint8 *a_recvBuff, BME280_uint8 a_len) {
-	/* Status of SPI transmission */
+	if ((*a_cfgPtr)->GPIOCallback_SetNSS == NULL_PTR
+			|| (*a_cfgPtr)->GPIOCallback_resetNSS == NULL_PTR)
+		return BME280_CALLBACK_NOT_SET;
 
+	/* Status of SPI transmission */
 	BME280_Comm_Status status = 0;
 	/* Mask read address in SPI mode */
-	a_regAddr = BME280_READ_MASK(a_regAddr);
-	/* Pull SS pin low to write*/
-	BME280_GPIO_WriteSlaveSelectPin((*a_cfgPtr)->SSPin, (*a_cfgPtr)->SSPort,
-			BME280_GPIO_LOW_STATE);
+	a_regAddr = BME280_SPI_READ_MASK(a_regAddr);
+	/* Pull SS pin low to write by calling user implemented GPIO callback*/
+	(*a_cfgPtr)->GPIOCallback_resetNSS();
 	/* Send control byte */
 	status = BME280_SPI_TransmitReceive(&a_regAddr, a_recvBuff, 1,
 	BME280_SPI_TIMEOUT_MS);
 	/* Receive data from sensor */
 	status = BME280_SPI_TransmitReceive(&a_regAddr, a_recvBuff, a_len,
 	BME280_SPI_TIMEOUT_MS);
-	/* Pull up SS pin to indicate end of transmission */
-	BME280_GPIO_WriteSlaveSelectPin((*a_cfgPtr)->SSPin, (*a_cfgPtr)->SSPort,
-			BME280_GPIO_HIGH_STATE);
+
+	/* Pull up SS pin to indicate end of transmission by calling user implemented GPIO callback */
+	(*a_cfgPtr)->GPIOCallback_SetNSS();
 
 	if (status == BME280_Comm_OK)
 		return BME280_OK;
@@ -285,24 +308,65 @@ static BME280_Status BME280_SPI_ReadWrapper(BME280_Handle *a_cfgPtr,
 
 static BME280_Status BME280_SPI_WriteWrapper(BME280_Handle *a_cfgPtr,
 		BME280_uint8 a_regAddr, BME280_uint8 a_dataByte) {
+	if ((*a_cfgPtr)->GPIOCallback_SetNSS == NULL_PTR
+			|| (*a_cfgPtr)->GPIOCallback_resetNSS == NULL_PTR)
+		return BME280_CALLBACK_NOT_SET;
 	/* Status of SPI transmission */
 	BME280_Comm_Status status = 0;
 	/* Dummy byte to receive in */
 	BME280_uint8 dummy = 0;
 	/* Mask write address in SPI mode */
-	a_regAddr = BME280_WRITE_MASK(a_regAddr);
-	/* Pull SS pin low to write*/
-	BME280_GPIO_WriteSlaveSelectPin((*a_cfgPtr)->SSPin, (*a_cfgPtr)->SSPort,
-			BME280_GPIO_LOW_STATE);
+	a_regAddr = BME280_SPI_WRITE_MASK(a_regAddr);
+	/* Pull SS pin low to write by calling user implemented GPIO callback*/
+	(*a_cfgPtr)->GPIOCallback_resetNSS();
 	/* Send control byte */
 	status = BME280_SPI_TransmitReceive(&a_regAddr, &dummy, 1,
 	BME280_SPI_TIMEOUT_MS);
 	/* Send data to write */
 	status = BME280_SPI_TransmitReceive(&a_dataByte, &dummy, 1,
 	BME280_SPI_TIMEOUT_MS);
-	/* Pull up SS pin to indicate end of transmission */
-	BME280_GPIO_WriteSlaveSelectPin((*a_cfgPtr)->SSPin, (*a_cfgPtr)->SSPort,
-			BME280_GPIO_HIGH_STATE);
+	/* Pull up SS pin to indicate end of transmission by calling user implemented GPIO callback */
+	(*a_cfgPtr)->GPIOCallback_SetNSS();
+
+	if (status == BME280_Comm_OK)
+		return BME280_OK;
+	else
+		return BME280_COMM_ERROR;
+}
+
+static BME280_Status BME280_I2C_ReadWrapper(BME280_Handle *a_cfgPtr,
+		BME280_uint8 a_regAddr, BME280_uint8 *a_recvBuff, BME280_uint8 a_len) {
+
+	/* Status of SPI transmission */
+	BME280_Comm_Status status = 0;
+
+	/* First, the sensor address must be sent in R/W = 0 for write mode followed by control byte (register address)*/
+	status = BME280_I2C_Master_Transmit(
+			BME280_I2C_WRITE_MASK((*a_cfgPtr)->I2C_SlaveAddr), &a_regAddr, 1,
+			BME280_I2C_TIMEOUT_MS);
+
+	/* Next, we re-send the slave address in R/W = 1 for read mode and start reading data (auto-incremented) */
+	status = BME280_I2C_Master_Receive(
+			BME280_I2C_READ_MASK((*a_cfgPtr)->I2C_SlaveAddr), a_recvBuff, a_len,
+			BME280_I2C_TIMEOUT_MS);
+
+	if (status == BME280_Comm_OK)
+		return BME280_OK;
+	else
+		return BME280_COMM_ERROR;
+}
+
+static BME280_Status BME280_I2C_WriteWrapper(BME280_Handle *a_cfgPtr,
+		BME280_uint8 a_regAddr, BME280_uint8 a_dataByte) {
+	/* Status of SPI transmission */
+	BME280_Comm_Status status = 0;
+
+	/* Send sensor address with R/W = 0 for write mode, followed by register address and data byte*/
+	BME280_uint8 arr[] = { a_regAddr, a_dataByte };
+	status = BME280_I2C_Master_Transmit(
+			BME280_I2C_WRITE_MASK((*a_cfgPtr)->I2C_SlaveAddr), arr, 2,
+			BME280_I2C_TIMEOUT_MS);
+
 	if (status == BME280_Comm_OK)
 		return BME280_OK;
 	else
@@ -317,7 +381,7 @@ static BME280_Status BME280_Read(BME280_Handle *a_cfgPtr,
 	/* Check for used interface, if neither is specified return no interface specified*/
 	result = BME280_NO_INTERFACE_SPECIFIED; /* Using I2C interface*/
 	if ((*a_cfgPtr)->Intf == BME280_Interface_I2C) {
-		//return BME280_I2C_ReadWrapper(a_cfgPtr, a_regAddr, a_data, a_len);
+		return BME280_I2C_ReadWrapper(a_cfgPtr, a_regAddr, a_data, a_len);
 	}
 
 	/* Using SPI interface */
@@ -336,7 +400,7 @@ static BME280_Status BME280_Write(BME280_Handle *a_cfgPtr,
 	result = BME280_NO_INTERFACE_SPECIFIED;
 	/* Using I2C interface*/
 	if ((*a_cfgPtr)->Intf == BME280_Interface_I2C) {
-		//return BME280_I2C_WriteWrapper((*a_cfgPtr)->I2C_Handle, a_regAddr, data, len);
+		return BME280_I2C_WriteWrapper(a_cfgPtr, a_regAddr, a_data_byte);
 	}
 	/* Using SPI interface */
 	else if ((*a_cfgPtr)->Intf == BME280_Interface_SPI) {
@@ -671,45 +735,45 @@ static BME280_uint32 BME280_compensatePressure_fixedPoint(
 
 	/* Sensor Calibration calculations */
 
-	var1 = (((int32_t) (*a_configPtr)->calib_data_2.Bytes.t_fine) / 2)
-			- (int32_t) 64000;
+	var1 = (((BME280_sint32) (*a_configPtr)->calib_data_2.Bytes.t_fine) / 2)
+			- (BME280_sint32) 64000;
 	var2 = (((var1 / 4) * (var1 / 4)) / 2048)
-			* ((int32_t) (*a_configPtr)->calib_data_1.words.dig_P6);
+			* ((BME280_sint32) (*a_configPtr)->calib_data_1.words.dig_P6);
 	var2 = var2
-			+ ((var1 * ((int32_t) ((*a_configPtr)->calib_data_1.words.dig_P5)))
+			+ ((var1 * ((BME280_sint32) ((*a_configPtr)->calib_data_1.words.dig_P5)))
 					* 2);
 	var2 = (var2 / 4)
-			+ (((int32_t) ((*a_configPtr)->calib_data_1.words.dig_P4)) * 65536);
+			+ (((BME280_sint32) ((*a_configPtr)->calib_data_1.words.dig_P4)) * 65536);
 	var3 = (((*a_configPtr)->calib_data_1.words.dig_P3)
 			* (((var1 / 4) * (var1 / 4)) / 8192)) / 8;
-	var4 = (((int32_t) ((*a_configPtr)->calib_data_1.words.dig_P2)) * var1) / 2;
+	var4 = (((BME280_sint32) ((*a_configPtr)->calib_data_1.words.dig_P2)) * var1) / 2;
 	var1 = (var3 + var4) / 262144;
 	var1 = (((32768 + var1))
-			* ((int32_t) ((*a_configPtr)->calib_data_1.words.dig_P1))) / 32768;
+			* ((BME280_sint32) ((*a_configPtr)->calib_data_1.words.dig_P1))) / 32768;
 
 	/* avoid exception caused by division by zero */
 	if (var1) {
-		var5 = (uint32_t) ((uint32_t) 1048576) - (a_rawPressure);
+		var5 = (BME280_uint32) ((BME280_uint32) 1048576) - (a_rawPressure);
 
-		a_PressureAfterCalibrating = ((uint32_t) (var5
-				- (uint32_t) (var2 / 4096))) * 3125;
+		a_PressureAfterCalibrating = ((BME280_uint32) (var5
+				- (BME280_uint32) (var2 / 4096))) * 3125;
 
 		if (a_PressureAfterCalibrating < 0x80000000) {
 			a_PressureAfterCalibrating = ((a_PressureAfterCalibrating) << 1)
-					/ ((uint32_t) var1);
+					/ ((BME280_uint32) var1);
 		} else {
 			(a_PressureAfterCalibrating) = ((a_PressureAfterCalibrating)
-					/ (uint32_t) var1) * 2;
+					/ (BME280_uint32) var1) * 2;
 		}
 
-		var1 = (((int32_t) ((*a_configPtr)->calib_data_1.words.dig_P9))
-				* ((int32_t) ((((a_PressureAfterCalibrating) / 8)
+		var1 = (((BME280_sint32) ((*a_configPtr)->calib_data_1.words.dig_P9))
+				* ((BME280_sint32) ((((a_PressureAfterCalibrating) / 8)
 						* ((a_PressureAfterCalibrating) / 8)) / 8192))) / 4096;
-		var2 = (((int32_t) ((a_PressureAfterCalibrating) / 4))
-				* ((int32_t) ((*a_configPtr)->calib_data_1.words.dig_P8)))
+		var2 = (((BME280_sint32) ((a_PressureAfterCalibrating) / 4))
+				* ((BME280_sint32) ((*a_configPtr)->calib_data_1.words.dig_P8)))
 				/ 8192;
 		(a_PressureAfterCalibrating) =
-				(uint32_t) ((int32_t) (a_PressureAfterCalibrating)
+				(BME280_uint32) ((BME280_sint32) (a_PressureAfterCalibrating)
 						+ ((var1 + var2
 								+ ((*a_configPtr)->calib_data_1.words.dig_P7))
 								/ 16));
@@ -779,11 +843,10 @@ static void BME280_DeInitHandle(BME280_Handle *a_cfgPtr) {
 	/* De-init configuration struct*/
 
 	(*a_cfgPtr)->ID = 0x00;
-	(*a_cfgPtr)->SSPin = 0x00;
-	(*a_cfgPtr)->SSPort = 0x00;
 	(*a_cfgPtr)->occupied = FALSE;
 	(*a_cfgPtr)->Intf = BME280_Interface_Not_Specified;
-
+	(*a_cfgPtr)->GPIOCallback_SetNSS = NULL_PTR;
+	(*a_cfgPtr)->GPIOCallback_resetNSS = NULL_PTR;
 	/* Zero calibration data */
 	for (BME280_uint8 c = 0; c < BME280_TEMP_PRESS_CALIB_BLOCK_SIZE; c++)
 		(*a_cfgPtr)->calib_data_1.arr[c] = 0;
@@ -832,11 +895,29 @@ BME280_Status BME280_setInterfaceType(BME280_Handle *a_cfgPtr,
 
 		if (result != BME280_IS_INSTANCE)
 			break;
+
+		/* Flag used if interface is I2C*/
+		BME280_uint8 flag = FALSE;
+
 		/* Set selected interface */
 		switch (a_intf) {
 		case BME280_Interface_I2C:
-			(*a_cfgPtr)->Intf = BME280_Interface_I2C;
-			result = BME280_OK;
+			/* Must check if more than the maxmimum I2C instances are occupied or not*/
+			for (BME280_uint8 c = 0; c < BME280_MAX_SENSOR_POOL_SIZE; ++c) {
+				if (BME280_sensorPool[c].Intf
+						== BME280_Interface_I2C&& BME280_sensorPool[c].I2C_SlaveAddr == BME280_I2C_Addr && BME280_sensorPool[c].occupied==TRUE) {
+					flag = TRUE;
+					break;
+				}
+			}
+			if (flag == TRUE) {
+				result = BME280_POOL_FULL;
+				break;
+			} else {
+				(*a_cfgPtr)->Intf = BME280_Interface_I2C;
+				(*a_cfgPtr)->I2C_SlaveAddr = BME280_I2C_Addr;
+				result = BME280_OK;
+			}
 			break;
 		case BME280_Interface_SPI:
 			(*a_cfgPtr)->Intf = BME280_Interface_SPI;
@@ -1730,55 +1811,72 @@ BME280_Status BME280_DeInit(BME280_Handle *a_cfgPtr) {
 		(*a_cfgPtr)->occupied = FALSE;
 
 		/* Let handle point to null*/
-		(*a_cfgPtr) = NULL;
+		(*a_cfgPtr) = NULL_PTR;
 
 		/* De-init complete */
 	} while (0);
 	return result;
 }
 
-BME280_Status BME280_SPI_setSlaveSelectPin(BME280_Handle *a_cfgPtr,
-		BME280_SlaveSelectPinID a_pin) {
+BME280_Status BME280_setAssertNSSCallback(BME280_Handle *a_cfgPtr,
+		void (*a_callback)(void)) {
 	BME280_Status result = BME280_isInstance(a_cfgPtr);
 	do {
 		/* If it's not an existing instance, break*/
 		if (result != BME280_IS_INSTANCE)
 			break;
-		(*a_cfgPtr)->SSPin = a_pin;
+		/* If the callback is null, break*/
+		if (a_callback == NULL_PTR) {
+			result = BME280_NULL_ERROR;
+			break;
+		}
 
+		(*a_cfgPtr)->GPIOCallback_SetNSS = a_callback;
 	} while (0);
 	return result;
 }
 
-BME280_Status BME280_SPI_setSlaveSelectPort(BME280_Handle *a_cfgPtr,
-		BME280_SlaveSelectPinID a_port) {
+BME280_Status BME280_setReleaseNSSCallback(BME280_Handle *a_cfgPtr,
+		void (*a_callback)(void)) {
 	BME280_Status result = BME280_isInstance(a_cfgPtr);
-
 	do {
 		/* If it's not an existing instance, break*/
 		if (result != BME280_IS_INSTANCE)
 			break;
-		(*a_cfgPtr)->SSPin = a_port;
+		/* If the callback is null, break*/
+		if (a_callback == NULL_PTR) {
+			result = BME280_NULL_ERROR;
+			break;
+		}
 
+		(*a_cfgPtr)->GPIOCallback_resetNSS = a_callback;
 	} while (0);
 	return result;
 }
 
-__attribute__((weak))                       BME280_Comm_Status BME280_SPI_TransmitReceive(
+__attribute__((weak)) BME280_Comm_Status BME280_SPI_TransmitReceive(
 		BME280_uint8 *txData, BME280_uint8 *rxData, BME280_uint16 size,
 		BME280_uint32 timeout) {
 	/* To be implemented by the user */
 	return BME280_NOT_IMPLEMENTED;
 }
 
-__attribute__((weak))          BME280_Status BME280_delayMs(BME280_uint32 a_milliseconds) {
+__attribute__((weak)) BME280_Status BME280_delayMs(BME280_uint32 a_milliseconds) {
 	/* To be implemented by the user */
 	return BME280_NOT_IMPLEMENTED;
 }
 
-__attribute__((weak))                       BME280_Status BME280_GPIO_WriteSlaveSelectPin(
-		BME280_SlaveSelectPinID a_pin, BME280_SlaveSelectPortID a_port,
-		BME280_GPIOState a_state) {
+__attribute__((weak)) BME280_Status BME280_I2C_Master_Transmit(
+		BME280_uint8 sensorAddr, BME280_uint8 *txData, BME280_uint16 size,
+		BME280_uint32 timeout) {
 	/* To be implemented by the user */
 	return BME280_NOT_IMPLEMENTED;
 }
+
+__attribute__((weak)) BME280_Status BME280_I2C_Master_Receive(
+		BME280_uint8 sensorAddr, BME280_uint8 *rxData, BME280_uint16 size,
+		BME280_uint32 timeout) {
+	/* To be implemented by the user */
+	return BME280_NOT_IMPLEMENTED;
+}
+

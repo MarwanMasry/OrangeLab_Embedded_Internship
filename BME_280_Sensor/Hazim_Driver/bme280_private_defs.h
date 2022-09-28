@@ -29,9 +29,13 @@
 #define BME280_MAX_DISCOVERY_COUNT ((uint8)0x05)	/* Max discovery count of BME280 device on interface*/
 #define BME280_IM_UPDATE_READY ((uint8)0x00)		/* IM UPDATE flag ready state */
 #define BME280_MEASURING_DONE ((uint8)0x00)			/* Measuring flag ready state */
-#define BME280_READ_MASK(reg) (reg|0x80)			/* Mask read register address in case of SPI*/
-#define BME280_WRITE_MASK(reg) (reg&0x7F)			/* Mask write register address in case of SPI*/
+#define BME280_SPI_READ_MASK(reg) (reg|0x80)			/* Mask read register address in case of SPI*/
+#define BME280_SPI_WRITE_MASK(reg) (reg&0x7F)			/* Mask write register address in case of SPI*/
 #define BME280_SPI_TIMEOUT_MS (10)					/* SPI timeout in milliseconds, used in BME280_SPI_TransmitReceive function */
+
+#define BME280_I2C_READ_MASK(reg) ((reg<<1)&0xFF)			/* Mask read register address in case of I2C*/
+#define BME280_I2C_WRITE_MASK(reg) ((reg<<1)&0xFE)			/* Mask write register address in case of I2C*/
+#define BME280_I2C_TIMEOUT_MS (100)					/* I2C timeout in milliseconds, used in BME280_I2C_Master_Transmit/Receive function */
 #define BME280_LSBYTE_MASK (0x0F)
 
 /*********** BME280 constants and configuration parameters ***********/
@@ -46,7 +50,6 @@
 #define BME280_CALIB_1_BLOCK_SIZE (13)				/* Calib 1 block size mapped to structures */
 #define BME280_CALIB_2_BLOCK_SIZE (19)				/* Calib 2 block size mapped to structures */
 #define BME280_MAX_SENSOR_POOL_SIZE ((4))			/* Maximum pool size of available sensor instances */
-
 /*********** BME280 Register addresses ***********/
 #define BME280_HUM_REGISTER_LSB (0xFE)
 #define BME280_HUM_REGISTER_MSB (0xFD)

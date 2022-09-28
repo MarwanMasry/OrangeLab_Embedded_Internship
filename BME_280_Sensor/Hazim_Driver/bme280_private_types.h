@@ -12,7 +12,6 @@
  *                          Includes		                                   *
  *******************************************************************************/
 #include <bme280.h>
-#include <std_types.h>
 /*******************************************************************************
  *                          Typedefs		                                   *
  *******************************************************************************/
@@ -22,12 +21,12 @@
  * @brief Union used to create configuration register byte
  *******************************************************************************/
 typedef union {
-	uint8 config;
+	BME280_uint8 config;
 	struct {
-		uint8 spi3w_en :1;
-		uint8 :1;/**< Padding */
-		uint8 filter_coeff :3;
-		uint8 t_sb :3;
+		BME280_uint8 spi3w_en :1;
+		BME280_uint8 :1;/**< Padding */
+		BME280_uint8 filter_coeff :3;
+		BME280_uint8 t_sb :3;
 	} Bits;
 } BME280_ConfigRegisterUnion;
 
@@ -36,25 +35,25 @@ typedef union {
  * @brief Union used to receive and access calibration parameters
  *******************************************************************************/
 typedef union __attribute__((packed, aligned(1))) {
-	uint16 arr[BME280_CALIB_1_BLOCK_SIZE];
+	BME280_uint16 arr[BME280_CALIB_1_BLOCK_SIZE];
 	struct __attribute__((packed, aligned(1))) {
-		uint16 dig_T1;
-		sint16 dig_T2;
-		sint16 dig_T3;
+		BME280_uint16 dig_T1;
+		BME280_sint16 dig_T2;
+		BME280_sint16 dig_T3;
 
-		uint16 dig_P1;
-		sint16 dig_P2;
-		sint16 dig_P3;
-		sint16 dig_P4;
-		sint16 dig_P5;
-		sint16 dig_P6;
-		sint16 dig_P7;
-		sint16 dig_P8;
-		sint16 dig_P9;
+		BME280_uint16 dig_P1;
+		BME280_sint16 dig_P2;
+		BME280_sint16 dig_P3;
+		BME280_sint16 dig_P4;
+		BME280_sint16 dig_P5;
+		BME280_sint16 dig_P6;
+		BME280_sint16 dig_P7;
+		BME280_sint16 dig_P8;
+		BME280_sint16 dig_P9;
 
-		uint8 :8;/**< Padding */
+		BME280_uint8 :8;/**< Padding */
 
-		sint8 dig_H1;
+		BME280_sint8 dig_H1;
 	} words;
 } Calib1;
 
@@ -63,26 +62,26 @@ typedef union __attribute__((packed, aligned(1))) {
  * @brief Struct used to receive and access calibration parameters
  *******************************************************************************/
 typedef union __attribute__((packed, aligned(1))) {
-	uint8 arr[BME280_CALIB_2_BLOCK_SIZE];
+	BME280_uint8 arr[BME280_CALIB_2_BLOCK_SIZE];
 
 	struct __attribute__((packed, aligned(1))) {
-		sint16 dig_H2 :16;
+		BME280_sint16 dig_H2 :16;
 
-		uint8 dig_H3 :8;
+		BME280_uint8 dig_H3 :8;
 
-		uint8 dig_H4_msb :8;
-		uint8 dig_H4_lsb :4;
+		BME280_uint8 dig_H4_msb :8;
+		BME280_uint8 dig_H4_lsb :4;
 
-		uint8 dig_H5_lsb :4;
-		uint8 dig_H5_msb :8;
+		BME280_uint8 dig_H5_lsb :4;
+		BME280_uint8 dig_H5_msb :8;
 
-		sint8 dig_H6 :8;
-		sint16 dig_H4 :16;
+		BME280_sint8 dig_H6 :8;
+		BME280_sint16 dig_H4 :16;
 
-		sint16 dig_H5 :16;
+		BME280_sint16 dig_H5 :16;
 
-		sint32 t_fine;
-		sint32 t_fine_float;
+		BME280_sint32 t_fine;
+		BME280_sint32 t_fine_float;
 	} Bytes;
 
 } Calib2;
@@ -93,20 +92,20 @@ typedef union __attribute__((packed, aligned(1))) {
  *
  */
 typedef union __attribute__((packed, aligned(1))) {
-	uint8 arr[BME280_READINGS_BYTES_LENGTH];
+	BME280_uint8 arr[BME280_READINGS_BYTES_LENGTH];
 	struct __attribute__((packed, aligned(1))) {
-		uint8 press_msb :8;
-		uint8 press_lsb :8;
-		uint8 press_pad :4;
-		uint8 press_xlsb :4;
+		BME280_uint8 press_msb :8;
+		BME280_uint8 press_lsb :8;
+		BME280_uint8 press_pad :4;
+		BME280_uint8 press_xlsb :4;
 
-		uint8 temp_msb :8;
-		uint8 temp_lsb :8;
-		uint8 temp_pad :4;
-		uint8 temp_xlsb :4;
+		BME280_uint8 temp_msb :8;
+		BME280_uint8 temp_lsb :8;
+		BME280_uint8 temp_pad :4;
+		BME280_uint8 temp_xlsb :4;
 
-		uint8 hum_msb :8;
-		uint8 hum_lsb :8;
+		BME280_uint8 hum_msb :8;
+		BME280_uint8 hum_lsb :8;
 
 	} Bytes;
 } BME280_UncompensatedReadings;
@@ -118,12 +117,12 @@ typedef union __attribute__((packed, aligned(1))) {
  *
  */
 typedef union {
-	uint32 temperature;
+	BME280_uint32 temperature;
 	struct {
-		uint32 xlsb :4;
-		uint32 lsb :8;
-		uint32 msb :8;
-		uint32 :12;/**< Padding */
+		BME280_uint32 xlsb :4;
+		BME280_uint32 lsb :8;
+		BME280_uint32 msb :8;
+		BME280_uint32 :12;/**< Padding */
 	} Data;
 } BME280_TemperatureReading;
 
@@ -134,12 +133,12 @@ typedef union {
  *
  */
 typedef union {
-	sint32 pressure;
+	BME280_sint32 pressure;
 	struct {
-		sint32 xlsb :4;
-		sint32 lsb :8;
-		sint32 msb :8;
-		sint32 :12;/**< Padding */
+		BME280_sint32 xlsb :4;
+		BME280_sint32 lsb :8;
+		BME280_sint32 msb :8;
+		BME280_sint32 :12;/**< Padding */
 	} Data;
 
 } BME280_PressureReading;
@@ -151,10 +150,10 @@ typedef union {
  *
  */
 typedef union {
-	sint16 humidity;
+	BME280_sint16 humidity;
 	struct {
-		sint16 lsb :8;
-		sint16 msb :8;
+		BME280_sint16 lsb :8;
+		BME280_sint16 msb :8;
 	} Data;
 } BME280_HumidityReading;
 
@@ -163,11 +162,11 @@ typedef union {
  * @brief Union used to create control measurements register byte
  *******************************************************************************/
 typedef union {
-	uint8 config;
+	BME280_uint8 config;
 	struct {
-		uint8 mode :2;
-		uint8 osrs_p :3;
-		uint8 osrs_t :3;
+		BME280_uint8 mode :2;
+		BME280_uint8 osrs_p :3;
+		BME280_uint8 osrs_t :3;
 	} Bits;
 } BME280_CtrlMeasRegisterUnion;
 
@@ -176,10 +175,10 @@ typedef union {
  * @brief Union used to create control humidity register byte
  */
 typedef union {
-	uint8 config;
+	BME280_uint8 config;
 	struct {
-		uint8 osrs_h :3; /**< Humidity over-sampling setting**/
-		uint8 :5; /**< Padding */
+		BME280_uint8 osrs_h :3; /**< Humidity over-sampling setting**/
+		BME280_uint8 :5; /**< Padding */
 	} Bits;
 } BME280_CtrlHumRegisterUnion;
 
@@ -188,14 +187,23 @@ typedef union {
  * @brief Union used to create status register byte
  *******************************************************************************/
 typedef union {
-	uint8 config;
+	BME280_uint8 config;
 	struct {
-		uint8 im_update :1;
-		uint8 :2;/**< Padding */
-		uint8 measuring :1;
-		uint8 :4;/**< Padding */
+		BME280_uint8 im_update :1;
+		BME280_uint8 :2;/**< Padding */
+		BME280_uint8 measuring :1;
+		BME280_uint8 :4;/**< Padding */
 	} Bits;
 } BME280_StatusRegisterUnion;
+
+/**
+ * @enum BME280_I2C_SensorSlaveAddress
+ * @brief  Used to identify BME280 slave address in I2C interface mode. Must be set
+ * 		if the device's SDO is connected to __GND__ datasheet.
+ */
+typedef enum {
+	BME280_I2C_Addr = (0x76),
+}BME280_I2C_SensorSlaveAddress;
 
 /**
  * @struct BME280_ConfigType
@@ -203,11 +211,12 @@ typedef union {
  *  	  and sensor functions.
  */
 struct BME280_ConfigType {
-	uint8 ID; /**< Custom ID issued to the sensor by the user*/
-	boolean occupied; /**< Flag used to determine if instance is occupied or empty*/
+	BME280_uint8 ID; /**< Custom ID issued to the sensor by the user*/
+	BME280_boolean occupied; /**< Flag used to determine if instance is occupied or empty*/
 	BME280_InterfaceType Intf; /**< Interface type used with the sensor (I2C/SPI) */
-	BME280_SlaveSelectPinID SSPin; /**< ID for the slave select pin for SPI */
-	BME280_SlaveSelectPortID SSPort; /**< ID for the slave select port for SPI */
+	BME280_I2C_SensorSlaveAddress I2C_SlaveAddr;
+	void (*GPIOCallback_SetNSS)(void);			/**< Callback function for setting NSS pin */
+	void (*GPIOCallback_resetNSS)(void);			/**< Callback function for resetting NSS pin */
 	Calib1 calib_data_1; /**<Contains calibration data obtained from sensor*/
 	Calib2 calib_data_2; /**<Contains calibration data obtained from sensor*/
 };

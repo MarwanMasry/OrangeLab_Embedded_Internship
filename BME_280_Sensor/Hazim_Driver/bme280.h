@@ -12,10 +12,22 @@
 typedef struct BME280_ConfigType *BME280_Handle;
 
 /**
+ * @def BME280_boolean
+ * @brief 8 bit unsigned integer number
+ */
+typedef unsigned char BME280_boolean;
+
+/**
  * @def BME280_uint8
  * @brief 8 bit unsigned integer number
  */
 typedef unsigned char BME280_uint8;
+
+/**
+ * @def BME280_sint8
+ * @brief 8 bit signed integer number
+ */
+typedef unsigned char BME280_sint8;
 
 /**
  * @def BME280_uint16
@@ -46,20 +58,6 @@ typedef signed long BME280_sint32;
  * @brief 64 bit floating point number
  */
 typedef double BME280_float64;
-
-/**
- * @def BME280_SlaveSelectPinID
- * @brief  Used to specify pin on user target, does not need to be specific, just mapped
- * 		to the user as a HW pin.
- */
-typedef char BME280_SlaveSelectPinID;
-
-/**
- * @def BME280_SlaveSelectPortID
- * @brief  Used to specify port on user target, does not need to be specific, just mapped
- * 		to the user as a HW port.
- */
-typedef char BME280_SlaveSelectPortID;
 
 /**
  * @enum BME280_StandbyTime
@@ -126,6 +124,7 @@ typedef enum {
 	BME280_NOT_INSTANCE = 0x43, /**< Error code indicating that the handle is not an existing instance in the pool*/
 	BME280_NO_INTERFACE_SPECIFIED = 0x58, /**< Error code indicating that there was no communication interface specified, see BME280_setInterfaceType function */
 	BME280_SETTING_FAILED = 0x62, /**< General error code returned if a sensor setting was not set and validated */
+	BME280_CALLBACK_NOT_SET = 0xBD /**< Error code when callbacks for GPIO functions are not set by the user*/
 } BME280_Status;
 
 /**
@@ -171,25 +170,6 @@ typedef enum {
 } BME280_UpdateStatus;
 
 /**
- * @enum BME280_GPIOState
- * @brief Used to specify the pin state for slave select pin in SPI mode.
- *
- */
-typedef enum {
-	BME280_GPIO_LOW_STATE, BME280_GPIO_HIGH_STATE
-} BME280_GPIOState;
-
-/**
- * @enum BME280_InterfaceType
- * @brief Enum for interface used by the sensor
- */
-typedef enum {
-	BME280_Notation_Double = 0, /**< Selected Double precision number format (64 bit floating point) */
-	BME280_Notation_Fixed = 1, /**< Selected Fixed point number format (32 bit integer number) */
-	BME280_Notation_Not_Specified = (0xFF)
-} BME280_NotationType;
-
-/**
  * @enum BME280_InterfaceType
  * @brief Enum for interface used by the sensor
  */
@@ -230,7 +210,7 @@ typedef struct {
  * 		Instance is uninitialized and must be initialized by calling BME280_init function
  * 		to verify and initialize the sensor.
  *
- * 		_Note: If handle is already an occupied instance, the handle is unchanged.
+ * 		__Note: If handle is already an occupied instance, the handle is unchanged.
  *
  * @param a_cfgPtr	Pointer to sensor handle
  * @return Instance for an available sensor in the pool.
@@ -255,7 +235,7 @@ BME280_Status BME280_setInterfaceType(BME280_Handle *a_cfgPtr,
  * 		  - Initializes sensor by reading its chip ID and soft-resetting it
  *		  - Returns an empty handle for a new sensor (if pool limit is not reached)
  * @param a_cfgPtr		 Pointer to the sensor configuration struct
- * @return BME280_Status
+ * @return
  */
 BME280_Status BME280_init(BME280_Handle *a_cfgPtr);
 
@@ -542,28 +522,26 @@ BME280_Status BME280_setFilterCoefficient(BME280_Handle *a_cfgPtr,
 BME280_Status BME280_DeInit(BME280_Handle *a_cfgPtr);
 
 /**
- * @fn BME280_Status BME280_SPI_setSlaveSelectPin(BME280_Handle*, BME280_SlaveSelectPinID)
- * @brief Sets the pin for the sensor passed, so it can be used by the sensor API to
- * 		set SS pin.
+ * @fn BME280_Status BME280_setAssertNSSCallback(BME280_Handle*, void(*)(void))
+ * @brief
  *
- * @param a_cfgPtr	Pointer to sensor handle
- * @param a_pin		ID for pin (User dependent)
+ * @param a_cfgPtr
+ * @param a_callback
  * @return
  */
-BME280_Status BME280_SPI_setSlaveSelectPin(BME280_Handle *a_cfgPtr,
-		BME280_SlaveSelectPinID a_pin);
+BME280_Status BME280_setAssertNSSCallback(BME280_Handle *a_cfgPtr,
+		void (*a_callback)(void));
 
 /**
- * @fn BME280_Status BME280_SPI_setSlaveSelectPort(BME280_Handle*, BME280_SlaveSelectPinID)
- * @brief Sets the port for the sensor passed, so it can be used by the sensor API to
- * 		set SS pin.
+ * @fn BME280_Status BME280_setReleaseNSSCallback(BME280_Handle*, void(*)(void))
+ * @brief
  *
- * @param a_cfgPtr	Pointer to sensor handle
- * @param a_port	ID for port (User dependent)
+ * @param a_cfgPtr
+ * @param a_callback
  * @return
  */
-BME280_Status BME280_SPI_setSlaveSelectPort(BME280_Handle *a_cfgPtr,
-		BME280_SlaveSelectPinID a_port);
+BME280_Status BME280_setReleaseNSSCallback(BME280_Handle *a_cfgPtr,
+		void (*a_callback)(void));
 
 /**
  * @fn BME280_Comm_Status BME280_SPI_TransmitReceive(BME280_uint8*, BME280_uint8*, BME280_uint16, BME280_uint16)
@@ -593,18 +571,29 @@ extern BME280_Comm_Status BME280_SPI_TransmitReceive(BME280_uint8 *txData,
 extern BME280_Status BME280_delayMs(BME280_uint32 a_milliseconds);
 
 /**
- * @fn BME280_Status BME280_GPIO_WriteSlaveSelectPin(BME280_SlaveSelectPinID, BME280_SlaveSelectPortID, BME280_GPIOState)
- * @brief Used in SPI mode to toggle Slave select pin
- * 		when needing to transmit.
+ * @fn BME280_Status BME280_I2C_Master_Transmit(BME280_uint8, BME280_uint8*, BME280_uint16, BME280_uint32)
+ * @brief
  *
- * 		** Must be implemented by the user. **
- * @param a_pin Pin which is connected to the sensor for SPI slave select
- * @param a_port Port on which the pin is connected to the sensor for SPI slave select
- * @param a_state	GPIO pin state to be selected from BME280_GPIOState enum
- * @return Status if operation succeeded
+ * @param sensorAddr	Sensor address, assumed to be masked with the R/W bit from the internal API functions
+ * @param txData		Pointer to data to be transmitted
+ * @param size			Number of bytes to transmit
+ * @param timeout		Timeout in milliseconds
+ * @return
  */
-extern BME280_Status BME280_GPIO_WriteSlaveSelectPin(
-		BME280_SlaveSelectPinID a_pin, BME280_SlaveSelectPortID a_port,
-		BME280_GPIOState a_state);
+extern BME280_Status BME280_I2C_Master_Transmit(BME280_uint8 sensorAddr,
+		BME280_uint8 *txData, BME280_uint16 size, BME280_uint32 timeout);
+
+/**
+ * @fn BME280_Status BME280_I2C_Master_Receive(BME280_uint8, BME280_uint8*, BME280_uint16, BME280_uint32)
+ * @brief
+ *
+ * @param sensorAddr	Sensor address, assumed to be masked with the R/W bit from the internal API functions
+ * @param rxData		Pointer to buffer to receive data in
+ * @param size			Number of bytes to receive in rxData
+ * @param timeout		Timeout in milliseconds
+ * @return
+ */
+extern BME280_Status BME280_I2C_Master_Receive(BME280_uint8 sensorAddr,
+		BME280_uint8 *rxData, BME280_uint16 size, BME280_uint32 timeout);
 
 #endif /* BME280_DRIVER_BME280_H_ */
