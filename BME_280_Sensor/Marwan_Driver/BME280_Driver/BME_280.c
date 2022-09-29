@@ -15,9 +15,6 @@
 /* All Registers need for BME_280 Driver */
 #include "BME_280_Registers.h"
 
-/* Including HAL layer layers APIs */
-#include "stm32wbxx_hal.h"
-
 /* Needed Types*/
 #include "BME_280_Private_Types.h"
 
@@ -66,6 +63,40 @@ STATIC BME_280_Status BME_280_SPI_WriteWrapper
 		BME_280_Config* a_configPtr
 );
 
+/******************************************************************************
+ * @fn BME_280_Status BME_280_I2C_ReadWrapper(BME_280_Config*, uint8, uint8*, uint8)
+ * @brief
+ *
+ * @param a_configPtr
+ * @param a_regAddr
+ * @param a_recvBuff
+ * @param a_len
+ * @return
+ *******************************************************************************/
+STATIC BME_280_Status BME_280_I2C_ReadWrapper
+(
+		BME_280_Config* a_configPtr,
+		uint8 a_regAddr,
+		uint8 *a_recvBuff,
+		uint8 a_len
+);
+
+
+/******************************************************************************
+ * @fn BME_280_Status BME_280_I2C_WriteWrapper(BME_280_Config*, uint8, uint8)
+ * @brief
+ *
+ * @param a_configPtr
+ * @param a_regAddr
+ * @param a_dataByte
+ * @return
+ *******************************************************************************/
+STATIC BME_280_Status BME_280_I2C_WriteWrapper
+(
+		BME_280_Config* a_configPtr,
+		uint8 a_regAddr,
+		uint8 a_dataByte
+);
 
 /******************************************************************************
  * @fn BME_280_Status BME_280_read(uint8, uint8*, uint16, BME_280_Config*)
@@ -136,8 +167,6 @@ STATIC BME_280_Status BME_280_getCalibratedData
 
 
 
-#if (BME280_32BIT_COMPENSATING_MEASURMENTS == _ENABLE_)
-
 /******************************************************************************
  * @fn BME_280_Status BME_280_convertTemperature_fixedPoint(BME_280_Config*, BME280_TemperatureReading*, sint32*)
  * @brief this function will calibrate the temperature in a fixed point
@@ -189,9 +218,6 @@ STATIC BME_280_Status BME_280_convertHumidity_fixedPoint
 		uint32*	a_HumidityAfterCalibrating
 );
 
-#endif
-
-#if (BME280_FLOAT_COMPENSATING_MEASURMENTS == _ENABLE_)
 
 /******************************************************************************
  * @fn BME_280_Status BME_280_convertTemperature_floatingPoint(BME_280_Config*, BME280_TemperatureReading*, sint32*)
@@ -243,7 +269,6 @@ STATIC BME_280_Status BME_280_convertHumidity_floatingPoint
 		float64*	a_HumidityAfterCalibrating
 );
 
-#endif
 
 /******************************************************************************
  * @fn BME_280_Status BME_280_doesInstanceExsits(BME_280_Config*)
@@ -258,7 +283,6 @@ STATIC BME_280_Status BME_280_doesInstanceExsits
 		BME_280_Config* a_configPtr
 );
 
-
 /*******************************************************************************
  *                             Weak Functions			                       *
  *******************************************************************************/
@@ -271,7 +295,7 @@ STATIC BME_280_Status BME_280_doesInstanceExsits
  * @param a_Size
  * @return status of API
  *******************************************************************************/
-__weak BME_280_Status BME_280_SPI_TransmitReceive
+__attribute__((weak)) BME_280_SPI_Status BME_280_SPI_TransmitReceive
 (
 		uint8 *a_TxAddress,
 		uint8 *a_RxBuffer,
@@ -282,6 +306,7 @@ __weak BME_280_Status BME_280_SPI_TransmitReceive
 	while(1);
 }
 
+
 /******************************************************************************
  * @fn void BME_280_Delay(uint32)
  * @brief this function provide delay in ms this function must be implemented
@@ -289,13 +314,56 @@ __weak BME_280_Status BME_280_SPI_TransmitReceive
  *
  * @param a_delay
  *******************************************************************************/
-__weak void BME_280_Delay
+__attribute__((weak)) void BME_280_Delay
 (
-		uint32 a_delay
+	uint32 a_delay
 )
 {
 	while(1);
 }
+
+/******************************************************************************
+ * @fn BME_280_I2C_Status BME280_I2C_Master_Transmit(uint8, uint8*, uint16, uint32)
+ * @brief
+ *
+ * @param sensorAddr: Sensor address, assumed to be masked with the R/W bit from the internal API functions
+ * @param txData: Pointer to data to be transmitted
+ * @param size: Number of bytes to transmit
+ * @param timeout: Timeout in milliseconds
+ * @return
+ *******************************************************************************/
+__attribute__((weak))  BME_280_I2C_Status BME280_I2C_Master_Transmit
+(
+		uint8 sensorAddr,
+		uint8 *txData,
+		uint16 size,
+		uint32 timeout
+)
+{
+	while(1);
+}
+
+/******************************************************************************
+ * @fn BME_280_I2C_Status BME280_I2C_Master_Receive(uint8, uint8*, uint16, uint32)
+ * @brief
+ *
+ * @param sensorAddr: Sensor address, assumed to be masked with the R/W bit from the internal API functions
+ * @param rxData: Pointer to buffer to receive data in
+ * @param size: Number of bytes to receive in rxData
+ * @param timeout: Timeout in milliseconds
+ * @return
+ *******************************************************************************/
+__attribute__((weak)) BME_280_I2C_Status BME280_I2C_Master_Receive
+(
+		uint8 sensorAddr,
+		uint8 *rxData,
+		uint16 size,
+		uint32 timeout
+)
+{
+	while(1);
+}
+
 
 /*******************************************************************************
  *                        Private Function Definitions	                       *
@@ -341,6 +409,132 @@ STATIC BME_280_Status BME_280_doesInstanceExsits
 }
 
 /******************************************************************************
+ * @fn BME_280_Status BME_280_I2C_ReadWrapper(BME_280_Config*, uint8, uint8*, uint8)
+ * @brief
+ *
+ * @param a_configPtr
+ * @param a_regAddr
+ * @param a_recvBuff
+ * @param a_len
+ * @return
+ *******************************************************************************/
+STATIC BME_280_Status BME_280_I2C_ReadWrapper
+(
+		BME_280_Config* a_configPtr,
+		uint8 a_regAddr,
+		uint8 *a_recvBuff,
+		uint8 a_len
+)
+{
+	BME_280_Status result = BME280_OK;
+	BME_280_I2C_Status I2C_result = ZERO;
+	uint8 readCommand = ZERO;
+	uint8 writeCommand = ZERO;
+
+	do
+	{
+		if(NULL_PTR == a_configPtr)
+		{
+			result = BME280_NULL_ERROR;
+			break;
+		}
+
+		/* Break if the input already has no instance */
+		if( INSTANCE_NOT_TAKEN == BME_280_doesInstanceExsits(a_configPtr) )
+		{
+			result = BME280_NOT_INITIALIZED;
+			break;
+		}
+
+		/* Making read Command for I2C */
+		readCommand = (SENSOR_ADDRESS_IN_I2C_BUS<< ONE) | I2C_READ_MASK;
+		writeCommand = (SENSOR_ADDRESS_IN_I2C_BUS<< ONE) & I2C_WRITE_MASK;
+
+		/* First, the sensor address must be sent in R/W = 0 for write mode followed by control byte (register address)*/
+		I2C_result = BME280_I2C_Master_Transmit(readCommand, &a_regAddr, 1,BME280_I2C_TIMEOUT_MS);
+
+		if(I2C_TRANSIMISSION_FAILED == I2C_result)
+		{
+			result =BME280_I2C_TRANSIMISSION_FAILED;
+			break;
+		}
+
+		/* Next, we re-send the slave address in R/W = 1 for read mode and start reading data (auto-incremented) */
+		I2C_result = BME280_I2C_Master_Receive(writeCommand, a_recvBuff, a_len,BME280_I2C_TIMEOUT_MS);
+
+		if(I2C_TRANSIMISSION_FAILED == I2C_result)
+		{
+			result =BME280_I2C_TRANSIMISSION_FAILED;
+			break;
+		}
+
+		/* Success */
+		result = BME280_OK;
+
+
+	}while(FALSE);
+
+	return result;
+}
+
+/******************************************************************************
+ * @fn BME_280_Status BME_280_I2C_WriteWrapper(BME_280_Config*, uint8, uint8)
+ * @brief
+ *
+ * @param a_configPtr
+ * @param a_regAddr
+ * @param a_dataByte
+ * @return
+ *******************************************************************************/
+STATIC BME_280_Status BME_280_I2C_WriteWrapper
+(
+		BME_280_Config* a_configPtr,
+		uint8 a_regAddr,
+		uint8 a_dataByte
+)
+{
+	BME_280_Status result = BME280_OK;
+	BME_280_I2C_Status I2C_result = ZERO;
+	uint8 writeCommand = ZERO;
+	uint8 arr[] = { a_regAddr, a_dataByte };
+
+	do
+	{
+		if(NULL_PTR == a_configPtr)
+		{
+			result = BME280_NULL_ERROR;
+			break;
+		}
+
+		/* Break if the input already has no instance */
+		if( INSTANCE_NOT_TAKEN == BME_280_doesInstanceExsits(a_configPtr) )
+		{
+			result = BME280_NOT_INITIALIZED;
+			break;
+		}
+
+		/* Making read Command for I2C */
+		writeCommand = (SENSOR_ADDRESS_IN_I2C_BUS<< ONE) & I2C_WRITE_MASK;
+
+		/* Send sensor address with R/W = 0 for write mode, followed by register address and data byte*/
+		I2C_result = BME280_I2C_Master_Transmit(writeCommand, arr, 2,BME280_I2C_TIMEOUT_MS);
+
+		if(I2C_TRANSIMISSION_FAILED == I2C_result)
+		{
+			result =BME280_I2C_TRANSIMISSION_FAILED;
+			break;
+		}
+
+		/* Success */
+		result = BME280_OK;
+
+
+	}while(FALSE);
+
+	return result;
+}
+
+/******************************************************************************
  * @fn BME_280_Status BME_280_SPI_ReadWrapper(SPI_HandleTypeDef*, uint8, uint8*, uint16, BME_280_Config*)
  * @brief This function will use SPI API to read data from the sensor
  *
@@ -358,35 +552,69 @@ STATIC BME_280_Status BME_280_SPI_ReadWrapper
 		BME_280_Config* a_configPtr
 )
 {
-	BME_280_Status result = BME280_OK;
+	BME_280_Status     result = BME280_OK;
+	BME_280_SPI_Status  SPI_result ;
 	uint8 Dummy = 10;
 
-	/* Making the MSB 1 so that we make a read command */
-	uint8 readCommand = a_TxAddress | SPI_READ_MASK;
-
-	if ( (NULL_PTR != a_configPtr )  )
+	do
 	{
-		/* Setting CSB pin to low to start Read procedure */
-		HAL_GPIO_WritePin(CSB_PIN_PORT, CSB_PIN, RESET);
+		/* Making the MSB 1 so that we make a read command */
+		uint8 readCommand = a_TxAddress | SPI_READ_MASK;
 
-		/* Sending read command and receive dummy data form sensor */
-		BME_280_SPI_TransmitReceive( &readCommand, &Dummy, 1, 100);
+		if ( (NULL_PTR != a_configPtr )  )
+		{
+			/* Setting CSB pin to low to start Read procedure */
+			if(NULL_PTR == (*a_configPtr)->ResetSlaveSelect_ptr)
+			{
+				result = BME280_CALL_BACK_IS_NULL_ERROR;
+				break;
+			}
 
-		/* Receiving the data from sensor */
-		BME_280_SPI_TransmitReceive(&readCommand, a_RxBuffer, a_Size, 100);
+			(*a_configPtr)->ResetSlaveSelect_ptr();
 
-		/* Termination Read procedure */
-		HAL_GPIO_WritePin(CSB_PIN_PORT, CSB_PIN, SET);
 
-		result = BME280_OK;
-	}
-	else
-	{
-		result = BME280_NULL_ERROR;
-	}
+			/* Sending read command and receive dummy data form sensor */
+			SPI_result = BME_280_SPI_TransmitReceive( &readCommand, &Dummy, 1, 100);
+
+			if(SPI_TRANSIMISSION_FAILED == SPI_result)
+			{
+				result =BME280_SPI_TRANSIMISSION_FAILED;
+				break;
+			}
+
+			/* Receiving the data from sensor */
+			SPI_result = BME_280_SPI_TransmitReceive(&readCommand, a_RxBuffer, a_Size, 100);
+
+			if(SPI_TRANSIMISSION_FAILED == SPI_result)
+			{
+				result =BME280_SPI_TRANSIMISSION_FAILED;
+				break;
+			}
+
+			/* Termination Read procedure */
+			if(NULL_PTR == (*a_configPtr)->SetSlaveSelect_ptr)
+			{
+				result = BME280_CALL_BACK_IS_NULL_ERROR;
+				break;
+			}
+
+			(*a_configPtr)->SetSlaveSelect_ptr();
+
+
+			/* success */
+			result = BME280_OK;
+		}
+		else
+		{
+			result = BME280_NULL_ERROR;
+		}
+
+	}while(FALSE);
 
 	return result;
 }
+
+
 
 /******************************************************************************
  * @fn BME_280_Status BME_280_SPI_WriteWrapper(SPI_HandleTypeDef*, uint8, uint8*, BME_280_Config*)
@@ -406,33 +634,62 @@ STATIC BME_280_Status BME_280_SPI_WriteWrapper
 )
 {
 	BME_280_Status result = BME280_OK;
-
+	BME_280_SPI_Status SPI_result ;
 	uint8 Dummy = 10;
 
-	/* Making the MSB 1 so that we make a read command */
-	uint8 writeCommand = a_TxAddress & SPI_WRITE_MASK;
-
-
-	if ( (NULL_PTR != a_configPtr ))
+	do
 	{
-		/* Setting CSB pin to low to start Read procedure */
-		HAL_GPIO_WritePin(CSB_PIN_PORT, CSB_PIN, RESET);
+		/* Making the MSB 1 so that we make a read command */
+		uint8 writeCommand = a_TxAddress & SPI_WRITE_MASK;
 
-		/* Sending write command and receive dummy data form sensor */
-		BME_280_SPI_TransmitReceive(&writeCommand, &Dummy, 1, 100);
 
-		/* Writing data to sensor */
-		BME_280_SPI_TransmitReceive(a_Buffer, &Dummy, 1, 100);
+		if ( (NULL_PTR != a_configPtr ))
+		{
+			/* Setting CSB pin to low to start Read procedure */
+			if(NULL_PTR == (*a_configPtr)->ResetSlaveSelect_ptr)
+			{
+				result = BME280_CALL_BACK_IS_NULL_ERROR;
+				break;
+			}
 
-		/* Termination Read procedure */
-		HAL_GPIO_WritePin(CSB_PIN_PORT, CSB_PIN, SET);
+			(*a_configPtr)->ResetSlaveSelect_ptr();
 
-		result = BME280_OK;
-	}
-	else
-	{
-		result = BME280_NULL_ERROR;
-	}
+			/* Sending write command and receive dummy data form sensor */
+			SPI_result = BME_280_SPI_TransmitReceive(&writeCommand, &Dummy, 1, 100);
+
+			if(SPI_TRANSIMISSION_FAILED == SPI_result)
+			{
+				result =BME280_SPI_TRANSIMISSION_FAILED;
+				break;
+			}
+
+			/* Writing data to sensor */
+			SPI_result= BME_280_SPI_TransmitReceive(a_Buffer, &Dummy, 1, 100);
+
+			if(SPI_TRANSIMISSION_FAILED == SPI_result)
+			{
+				result =BME280_SPI_TRANSIMISSION_FAILED;
+				break;
+			}
+
+			/* Termination Read procedure */
+			if(NULL_PTR == (*a_configPtr)->SetSlaveSelect_ptr)
+			{
+				result = BME280_CALL_BACK_IS_NULL_ERROR;
+				break;
+			}
+
+			(*a_configPtr)->SetSlaveSelect_ptr();
+
+			/* success */
+			result = BME280_OK;
+		}
+		else
+		{
+			result = BME280_NULL_ERROR;
+		}
+
+	}while(FALSE);
 
 	return result;
 }
@@ -469,7 +726,8 @@ STATIC BME_280_Status BME_280_read
 		/* check if we are in I2C mode to interface with I2C */
 		else if ( (NULL_PTR != a_configPtr) && (BME_280_INTERFACE_I2C == (*a_configPtr)->ProtocolUsed))
 		{
-			break; ;// return I2C wrapper when implemented
+			result = BME_280_I2C_ReadWrapper(a_configPtr, a_Address, a_Buffer, a_size);
+			break; ;
 		}
 		else
 		{
@@ -509,9 +767,10 @@ STATIC BME_280_Status BME_280_write
 			break;
 		}
 		/* check if we are in I2C mode to interface with I2C */
-		else if ( (NULL_PTR == a_configPtr) && (BME_280_INTERFACE_I2C == (*a_configPtr)->ProtocolUsed))
+		else if ( (NULL_PTR != a_configPtr) && (BME_280_INTERFACE_I2C == (*a_configPtr)->ProtocolUsed))
 		{
-			break ;// return I2C wrapper when implemented
+			result = BME_280_I2C_WriteWrapper(a_configPtr, a_Address, *a_Buffer);
+			break ;
 		}
 		else
 		{
@@ -646,8 +905,6 @@ STATIC BME_280_Status BME_280_getUncompensatedData
 	return result;
 }
 
-
-#if (BME280_32BIT_COMPENSATING_MEASURMENTS == _ENABLE_)
 
 /******************************************************************************
  * @fn BME_280_Status BME_280_convertTemperature_fixedPoint(BME_280_Config*, BME280_TemperatureReading*, sint32*)
@@ -893,9 +1150,6 @@ STATIC BME_280_Status BME_280_convertHumidity_fixedPoint
 
 }
 
-#endif
-
-#if (BME280_FLOAT_COMPENSATING_MEASURMENTS == _ENABLE_)
 
 /******************************************************************************
  * @fn BME_280_Status BME_280_convertTemperature_floatingPoint(BME_280_Config*, BME280_TemperatureReading*, sint32*)
@@ -1124,7 +1378,6 @@ STATIC BME_280_Status BME_280_convertHumidity_floatingPoint
 	return result;
 }
 
-#endif
 
 
 
@@ -1191,26 +1444,22 @@ BME_280_Status BME_280_SoftReset
 	return result;
 }
 
-
 /******************************************************************************
- * @fn BME_280_Status BME_280_Init(BME_280_Config*)
- * @brief This function will initialize the sensor by making soft reset and
- *        check the ID of this sensor and save the calibrated data in configuration
- *        structure.
+ * @fn BME_280_Status BME_280_getInstance(BME_280_Config*)
+ * @brief This function will get you an instance of the driver if you get instance
+ *        you will have status of BME_280_OK, if not then the instance is either
+ *        exists or their is no instance exists
  *
  * @param a_configPtr
  * @return status of this procedural
  *******************************************************************************/
-BME_280_Status BME_280_Init
+BME_280_Status BME_280_getInstance
 (
-		BME_280_Config* a_configPtr,
-		uint8			a_protocolUsed
+		BME_280_Config* a_configPtr
 )
 {
 	BME_280_Status result = BME280_OK;
-	uint8 i = ZERO;
-	uint8 tryCount = FIVE; 	/* Discover sensor try count */
-	uint8 ID_value = ZERO ;
+	uint16 i = ZERO;
 
 	do
 	{
@@ -1221,11 +1470,6 @@ BME_280_Status BME_280_Init
 			break;
 		}
 
-		if( (BME_280_INTERFACE_SPI != a_protocolUsed) || (BME_280_INTERFACE_SPI != a_protocolUsed))
-		{
-			result = BME280_INTERFACE_UNKNOWN;
-			break;
-		}
 
 		/* Break if the input already has an instance */
 		if( INSTANCE_TAKEN == BME_280_doesInstanceExsits(a_configPtr) )
@@ -1239,10 +1483,11 @@ BME_280_Status BME_280_Init
 		{
 			if( NOT_OCCUIPIED == g_bme280_instances[i].occupied)
 			{
-
+				(*a_configPtr)->ProtocolUsed = 0;
 				*a_configPtr = &g_bme280_instances[i];
 				(*a_configPtr)->occupied = OCCUIPIED;
-				(*a_configPtr)->ProtocolUsed = a_protocolUsed;
+				(*a_configPtr)->ResetSlaveSelect_ptr = NULL_PTR;
+				(*a_configPtr)->SetSlaveSelect_ptr = NULL_PTR;
 				break;
 			}
 		}
@@ -1251,6 +1496,53 @@ BME_280_Status BME_280_Init
 		if( INSTANCE_NOT_TAKEN == BME_280_doesInstanceExsits(a_configPtr) )
 		{
 			result = BME280_NO_INSTANCES_AVALIABLE;
+			break;
+		}
+
+		/* Success */
+		result = BME280_OK;
+
+	}while(FALSE);
+
+	return result;
+}
+
+
+/******************************************************************************
+ * @fn BME_280_Status BME_280_Init(BME_280_Config*)
+ * @brief This function will initialize the sensor by making soft reset and
+ *        check the ID of this sensor and save the calibrated data in configuration
+ *        structure.
+ *
+ * @param a_configPtr
+ * @return status of this procedural
+ *******************************************************************************/
+BME_280_Status BME_280_Init
+(
+		BME_280_Config* a_configPtr
+)
+{
+	BME_280_Status result = BME280_OK;
+	uint8 tryCount = FIVE; 	/* Discover sensor try count */
+	uint8 ID_value = ZERO ;
+
+	do
+	{
+		if(NULL_PTR == a_configPtr)
+		{
+			result = BME280_NULL_ERROR;
+			break;
+		}
+
+		/* Break if the input already has no instance */
+		if( INSTANCE_NOT_TAKEN == BME_280_doesInstanceExsits(a_configPtr) )
+		{
+			result = BME280_NOT_INITIALIZED;
+			break;
+		}
+
+		if(result != BME280_OK)
+		{
 			break;
 		}
 
@@ -1268,6 +1560,20 @@ BME_280_Status BME_280_Init
 
 				if (result == BME280_OK)
 				{
+					/* set CS pin to low in case of using SPI mode*/
+					if( (*a_configPtr)->ProtocolUsed == BME_280_INTERFACE_SPI)
+					{
+						if( (*a_configPtr)->ResetSlaveSelect_ptr != NULL_PTR )
+						{
+							(*a_configPtr)->ResetSlaveSelect_ptr();
+						}
+						else
+						{
+							result = BME280_NULL_ERROR;
+							break;
+						}
+					}
+
 					/* Read Calibration Data */
 					result = BME_280_getCalibratedData(a_configPtr);
 					/* Set mode to sleep mode */
@@ -1285,6 +1591,92 @@ BME_280_Status BME_280_Init
 
 	return result;
 }
+
+
+/******************************************************************************
+ * @fn void BME_280_SetAssertSlaveSelectCallback(void(*)(void))
+ * @brief The user must provide the API that set the Slave select pin
+ *
+ * @param a_assertSlaveSelect_ptr: pointer to function to set Slave select API
+ * @return status of this procedural
+ *******************************************************************************/
+BME_280_Status BME_280_SetAssertSlaveSelectCallback
+(
+		BME_280_Config*   a_configPtr,
+		void (*a_assertSlaveSelect_ptr)(void)
+)
+{
+	BME_280_Status result = BME280_OK;
+
+	do
+	{
+		if(NULL_PTR == a_configPtr  ||  NULL_PTR == a_assertSlaveSelect_ptr)
+		{
+			result = BME280_NULL_ERROR;
+			break;
+		}
+
+		/* Break if the input already has no instance */
+		if( INSTANCE_NOT_TAKEN == BME_280_doesInstanceExsits(a_configPtr) )
+		{
+			result = BME280_NOT_INITIALIZED;
+			break;
+		}
+
+		/* save the function to pointer to be used later */
+		(*a_configPtr)->SetSlaveSelect_ptr = a_assertSlaveSelect_ptr;
+
+		/* Success */
+		result = BME280_OK;
+
+
+	}while(FALSE);
+
+	return result;
+}
+
+/******************************************************************************
+ * @fn void BME_280_SetReleaseSlaveSelectCallback(void(*)(void))
+ * @brief The user must provide the API that reset the Slave select pin
+ *
+ * @param a_releaseSlaveSelect_ptr:: pointer to function to set Slave select API
+ *******************************************************************************/
+BME_280_Status BME_280_SetReleaseSlaveSelectCallback
+(
+		BME_280_Config*   a_configPtr,
+		void (*a_releaseSlaveSelect_ptr)(void)
+)
+{
+	BME_280_Status result = BME280_OK;
+
+	do
+	{
+		if(NULL_PTR == a_configPtr  ||  NULL_PTR == a_releaseSlaveSelect_ptr)
+		{
+			result = BME280_NULL_ERROR;
+			break;
+		}
+
+		/* Break if the input already has no instance */
+		if( INSTANCE_NOT_TAKEN == BME_280_doesInstanceExsits(a_configPtr) )
+		{
+			result = BME280_NOT_INITIALIZED;
+			break;
+		}
+
+		/* save the function to pointer to be used later */
+		(*a_configPtr)->ResetSlaveSelect_ptr = a_releaseSlaveSelect_ptr;
+
+		/* Success */
+		result = BME280_OK;
+
+
+	}while(FALSE);
+
+	return result;
+
+}
+
 
 /******************************************************************************
  * @fn BME_280_Status BME_280_DeInit(BME_280_Config*)
@@ -1326,7 +1718,11 @@ BME_280_Status BME_280_DeInit
 
 		/* Free the resources */
 		(*a_configPtr)->occupied = ZERO;
+		(*a_configPtr)->ProtocolUsed = ZERO;
+		(*a_configPtr)->ResetSlaveSelect_ptr = NULL_PTR;
+		(*a_configPtr)->SetSlaveSelect_ptr = NULL_PTR;
 		a_configPtr = NULL_PTR;
+
 
 		/* Success */
 		result = BME280_OK;
@@ -1337,6 +1733,81 @@ BME_280_Status BME_280_DeInit
 }
 
 
+/******************************************************************************
+ * @fn BME_280_Status BME_280_setInterfaceProtocol(BME_280_Config*, BME_280_CommunicationProtocol)
+ * @brief the user must set the protocol used to interface with the sensor
+ *
+ * @param a_configPtr
+ * @param a_protocol: I2C or SPI
+ * @return
+ *******************************************************************************/
+BME_280_Status BME_280_setInterfaceProtocol
+(
+		BME_280_Config*   a_configPtr,
+		BME_280_CommunicationProtocol a_protocol
+)
+{
+	BME_280_Status result = BME280_OK;
+	uint8 i = ZERO;
+
+	do
+	{
+		if(NULL_PTR == a_configPtr)
+		{
+			result = BME280_NULL_ERROR;
+			break;
+		}
+
+		if( (BME_280_INTERFACE_SPI != a_protocol) && (BME_280_INTERFACE_I2C != a_protocol))
+		{
+			result = BME280_INTERFACE_UNKNOWN;
+			break;
+		}
+
+
+		/* Break if the input already has no instance */
+		if( INSTANCE_NOT_TAKEN == BME_280_doesInstanceExsits(a_configPtr) )
+		{
+			result = BME280_NOT_INITIALIZED;
+			break;
+		}
+
+		if(result != BME280_OK)
+		{
+			break;
+		}
+
+		/* we need to check if user take instance of I2C or not because
+		 * the driver allows only one instance of I2C on the same I2C bus
+		 * as it is has only one specific address [0x76]
+		 */
+		/* search if their is an instance occupied or not and give it one if not */
+		for( i = ZERO ; i < sizeof(g_bme280_instances)/sizeof(g_bme280_instances[ZERO]) ; i++)
+		{
+			if( (OCCUIPIED == g_bme280_instances[i].occupied) && (BME_280_INTERFACE_I2C == g_bme280_instances[i].ProtocolUsed))
+			{
+				result = BME280_CANNOT_HAVE_MORE_THAN_ONE_INSTANCE_OF_I2C;
+				BME_280_DeInit(a_configPtr);
+				break;
+			}
+		}
+
+		if(BME280_CANNOT_HAVE_MORE_THAN_ONE_INSTANCE_OF_I2C == result)
+		{
+			break;
+		}
+
+		/* Set the NSS pin  Port/Pin number */
+		(*a_configPtr)->ProtocolUsed =  a_protocol;
+
+
+		/* Success */
+		result = BME280_OK;
+	}while(FALSE);
+
+	return result;
+
+}
 
 /******************************************************************************
  * @fn BME_280_Status BME_280_SetMode(BME_280_Config*, BME_280_Mode)
@@ -2281,7 +2752,6 @@ BME_280_Status BME_280_getMeasurmentStatus
 	return result;
 }
 
-#if (BME280_32BIT_COMPENSATING_MEASURMENTS == _ENABLE_)
 /******************************************************************************
  * @fn BME_280_Status BME_280_getTemperature_fixedPoint(BME_280_Config*, sint32*)
  * @brief  output the temperature in this format: value of "5123" equal 51.23 degree
@@ -2293,7 +2763,7 @@ BME_280_Status BME_280_getMeasurmentStatus
 BME_280_Status BME_280_getTemperature_fixedPoint
 (
 		BME_280_Config* a_configPtr,
-		sint32*	a_Temperature
+		BME_280_TempType_fixedPoint*	a_Temperature
 )
 {
 	BME_280_Status result = BME280_OK;
@@ -2371,7 +2841,7 @@ BME_280_Status BME_280_getTemperature_fixedPoint
 BME_280_Status BME_280_getPressure_fixedPoint
 (
 		BME_280_Config* a_configPtr,
-		uint32*	        a_Pressure
+		BME_280_PressureType_fixedPoint*  a_Pressure
 )
 {
 	BME_280_Status result = BME280_OK;
@@ -2457,14 +2927,14 @@ BME_280_Status BME_280_getPressure_fixedPoint
 BME_280_Status BME_280_getHumidity_fixedPoint
 (
 		BME_280_Config* a_configPtr,
-		uint32*	a_Humidity
+		BME_280_HumidityType_fixedPoint* a_Humidity
 )
 {
 
 	BME_280_Status result = BME280_OK;
 	BME280_UncompensatedReadings unCompensatedData = {ZERO};
 	BME280_HumidityReading       unCompensatedHumidity = {ZERO};
-	sint32 temp = {ZERO};
+	BME_280_TempType_fixedPoint temp = {ZERO};
 	uint32 measurementDelay = ZERO;
 
 	do
@@ -2530,9 +3000,6 @@ BME_280_Status BME_280_getHumidity_fixedPoint
 	return result;
 }
 
-#endif
-
-#if (BME280_FLOAT_COMPENSATING_MEASURMENTS == _ENABLE_)
 /******************************************************************************
  * @fn BME_280_Status BME_280_getTemperature_floatingPoint(BME_280_Config*, sint32*)
  * @brief  output the temperature in floating point format, the output is in celsius
@@ -2545,7 +3012,7 @@ BME_280_Status BME_280_getHumidity_fixedPoint
 BME_280_Status BME_280_getTemperature_floatingPoint
 (
 		BME_280_Config* a_configPtr,
-		float64*	    a_Temperature
+		BME_280_TempType_floatingPoint*	    a_Temperature
 )
 {
 	BME_280_Status result = BME280_OK;
@@ -2623,7 +3090,7 @@ BME_280_Status BME_280_getTemperature_floatingPoint
 BME_280_Status BME_280_getPressure_floatingPoint
 (
 		BME_280_Config* a_configPtr,
-		float64*	    a_Pressure
+		BME_280_PressureType_floatingPoint*	    a_Pressure
 )
 {
 	BME_280_Status result = BME280_OK;
@@ -2709,14 +3176,14 @@ BME_280_Status BME_280_getPressure_floatingPoint
 BME_280_Status BME_280_getHumidity_floatingPoint
 (
 		BME_280_Config* a_configPtr,
-		float64*	    a_Humidity
+		BME_280_HumidityType_floatingPoint*	 a_Humidity
 )
 {
 
 	BME_280_Status result = BME280_OK;
 	BME280_UncompensatedReadings unCompensatedData = {ZERO};
 	BME280_HumidityReading       unCompensatedHumidity = {ZERO};
-	float64 temp = {ZERO};
+	BME_280_TempType_floatingPoint temp = {ZERO};
 	uint32 measurementDelay = ZERO;
 
 	do
@@ -2782,7 +3249,6 @@ BME_280_Status BME_280_getHumidity_floatingPoint
 	return result;
 }
 
-#endif
 
 
 

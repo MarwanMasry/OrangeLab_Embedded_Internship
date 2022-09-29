@@ -25,13 +25,23 @@
 /* BME_280 Types Header file */
 #include "BME_280_Public_Types.h"
 
-/* BME_280 Pre-Compile Configuration Header file */
-#include "BME_280_Cfg.h"
-
-
 /*******************************************************************************
  *                          Public Function Prototype	                       *
  *******************************************************************************/   
+
+/******************************************************************************
+ * @fn BME_280_Status BME_280_getInstance(BME_280_Config*)
+ * @brief This function will get you an instance of the driver if you get instance
+ *        you will have status of BME_280_OK, if not then the instance is either
+ *        exists or their is no instance exists
+ *
+ * @param a_configPtr
+ * @return status of this procedural
+ *******************************************************************************/
+BME_280_Status BME_280_getInstance
+(
+		BME_280_Config* a_configPtr
+);
 
 /******************************************************************************
  * @fn BME_280_Status BME_280_Init(BME_280_Config*)
@@ -44,8 +54,7 @@
  *******************************************************************************/
 BME_280_Status BME_280_Init
 (
-		BME_280_Config* a_configPtr,
-		BME_280_CommunicationProtocol	a_protocolUsed
+		BME_280_Config* a_configPtr
 );
 
 
@@ -60,8 +69,6 @@ BME_280_Status BME_280_DeInit
 (
 		BME_280_Config* a_configPtr
 );
-
-
 
 
 /******************************************************************************
@@ -261,7 +268,6 @@ BME_280_Status BME_280_GetHumidityOverSamplingSetting
 );
 
 
-#if (BME280_32BIT_COMPENSATING_MEASURMENTS == _ENABLE_)
 /******************************************************************************
  * @fn BME_280_Status BME_280_getTemperature_fixedPoint(BME_280_Config*, sint32*)
  * @brief  output the temperature in this format: value of "5123" equal 51.23 degree
@@ -273,7 +279,7 @@ BME_280_Status BME_280_GetHumidityOverSamplingSetting
 BME_280_Status BME_280_getTemperature_fixedPoint
 (
 		BME_280_Config* a_configPtr,
-		sint32*	a_Temperature
+		BME_280_TempType_fixedPoint*	a_Temperature
 );
 
 /******************************************************************************
@@ -288,7 +294,7 @@ BME_280_Status BME_280_getTemperature_fixedPoint
 BME_280_Status BME_280_getPressure_fixedPoint
 (
 		BME_280_Config* a_configPtr,
-		uint32*	a_Pressure
+		BME_280_PressureType_fixedPoint*	a_Pressure
 );
 
 
@@ -304,12 +310,9 @@ BME_280_Status BME_280_getPressure_fixedPoint
 BME_280_Status BME_280_getHumidity_fixedPoint
 (
 		BME_280_Config* a_configPtr,
-		uint32*	a_Humidity
+		BME_280_HumidityType_fixedPoint*	a_Humidity
 );
 
-#endif
-
-#if (BME280_FLOAT_COMPENSATING_MEASURMENTS == _ENABLE_)
 /******************************************************************************
  * @fn BME_280_Status BME_280_getTemperature_floatingPoint(BME_280_Config*, sint32*)
  * @brief  output the temperature in floating point format, the output is in celsius
@@ -322,7 +325,7 @@ BME_280_Status BME_280_getHumidity_fixedPoint
 BME_280_Status BME_280_getTemperature_floatingPoint
 (
 		BME_280_Config* a_configPtr,
-		float64*	    a_Temperature
+		BME_280_TempType_floatingPoint*	    a_Temperature
 );
 
 /******************************************************************************
@@ -336,7 +339,7 @@ BME_280_Status BME_280_getTemperature_floatingPoint
 BME_280_Status BME_280_getPressure_floatingPoint
 (
 		BME_280_Config* a_configPtr,
-		float64*	    a_Pressure
+		BME_280_PressureType_floatingPoint*	    a_Pressure
 );
 
 /******************************************************************************
@@ -350,10 +353,9 @@ BME_280_Status BME_280_getPressure_floatingPoint
 BME_280_Status BME_280_getHumidity_floatingPoint
 (
 		BME_280_Config* a_configPtr,
-		float64*	    a_Humidity
+		BME_280_HumidityType_floatingPoint*	  a_Humidity
 );
 
-#endif
 
 /******************************************************************************
  * @fn BME_280_Status BME_280_getID(BME_280_Config*, uint8*)
@@ -430,6 +432,52 @@ BME_280_Status BME_280_getSensorSettings
 
 
 /******************************************************************************
+ * @fn BME_280_Status BME_280_setInterfaceProtocol(BME_280_Config*, BME_280_CommunicationProtocol)
+ * @brief the user must set the protocol used to interface with the sensor
+ *
+ * @param a_configPtr
+ * @param a_protocol: I2C or SPI
+ * @return status of this procedural
+ *******************************************************************************/
+BME_280_Status BME_280_setInterfaceProtocol
+(
+		BME_280_Config*   a_configPtr,
+		BME_280_CommunicationProtocol a_protocol
+);
+
+/******************************************************************************
+ * @fn void BME_280_SetAssertSlaveSelectCallback(void(*)(void))
+ * @brief The user must provide the API that set the Slave select pin
+ *
+ * @param a_configPtr
+ * @param a_assertSlaveSelect_ptr: pointer to function to set Slave select API
+ * @return status of this procedural
+ *******************************************************************************/
+BME_280_Status BME_280_SetAssertSlaveSelectCallback
+(
+		BME_280_Config*   a_configPtr,
+		void (*a_assertSlaveSelect_ptr)(void)
+);
+
+/******************************************************************************
+ * @fn void BME_280_SetReleaseSlaveSelectCallback(void(*)(void))
+ * @brief The user must provide the API that reset the Slave select pin
+ *
+ * @param a_configPtr
+ * @param a_releaseSlaveSelect_ptr:: pointer to function to set Slave select API
+ *******************************************************************************/
+BME_280_Status BME_280_SetReleaseSlaveSelectCallback
+(
+		BME_280_Config*   a_configPtr,
+		void (*a_releaseSlaveSelect_ptr)(void)
+);
+
+
+/*******************************************************************************
+ *                             Weak Functions			                       *
+ *******************************************************************************/
+
+/******************************************************************************
  * @fn BME_280_Status BME_280_SPI_TransmitReceive(uint8*, uint8*, uint16)
  * @brief this is a weak function implemented by the user
  *
@@ -438,13 +486,14 @@ BME_280_Status BME_280_getSensorSettings
  * @param a_Size
  * @return status of API
  *******************************************************************************/
-BME_280_Status BME_280_SPI_TransmitReceive
+BME_280_SPI_Status BME_280_SPI_TransmitReceive
 (
 		uint8 *a_TxAddress,
 		uint8 *a_RxBuffer,
 		uint16 a_Size,
 		uint16 timeout
 );
+
 
 /******************************************************************************
  * @fn void BME_280_Delay(uint32)
@@ -456,6 +505,43 @@ BME_280_Status BME_280_SPI_TransmitReceive
 void BME_280_Delay
 (
 		uint32 a_delay
+);
+
+
+/******************************************************************************
+ * @fn BME_280_I2C_Status BME280_I2C_Master_Transmit(uint8, uint8*, uint16, uint32)
+ * @brief
+ *
+ * @param sensorAddr: Sensor address, assumed to be masked with the R/W bit from the internal API functions
+ * @param txData: Pointer to data to be transmitted
+ * @param size: Number of bytes to transmit
+ * @param timeout: Timeout in milliseconds
+ * @return
+ *******************************************************************************/
+BME_280_I2C_Status BME280_I2C_Master_Transmit
+(
+		uint8 sensorAddr,
+		uint8 *txData,
+		uint16 size,
+		uint32 timeout
+);
+
+/******************************************************************************
+ * @fn BME_280_I2C_Status BME280_I2C_Master_Receive(uint8, uint8*, uint16, uint32)
+ * @brief
+ *
+ * @param sensorAddr: Sensor address, assumed to be masked with the R/W bit from the internal API functions
+ * @param rxData: Pointer to buffer to receive data in
+ * @param size: Number of bytes to receive in rxData
+ * @param timeout: Timeout in milliseconds
+ * @return
+ *******************************************************************************/
+BME_280_I2C_Status BME280_I2C_Master_Receive
+(
+		uint8 sensorAddr,
+		uint8 *rxData,
+		uint16 size,
+		uint32 timeout
 );
 
 

@@ -5,7 +5,7 @@
  *
  * File Name: BME_280_unitTest.h
  *
- * Description: Header file for the BME280 Test Cases.
+ * Description: Header file for the BME280 Test Cases on STM32WB55xG MCU.
  *
  * Marwan Abdelhakim Elmasry
  ******************************************************************************/

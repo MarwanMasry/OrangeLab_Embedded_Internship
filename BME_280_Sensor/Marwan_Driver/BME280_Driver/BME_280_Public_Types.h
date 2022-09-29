@@ -19,10 +19,6 @@
 /* Standard types */
 #include "Std_Types.h"
 
-/* BME_280 Pre-Compile Configuration Header file */
-#include "BME_280_Cfg.h"
-
-
 /*******************************************************************************
  *                             Types Deceleration	                       *
  *******************************************************************************/   
@@ -71,6 +67,17 @@ typedef enum
 }BME_280_FilterCoefficient;
 
 /******************************************************************************
+ * @enum FlagStatus
+ * @brief  this enum is uset to set values of set and reset
+ *******************************************************************************/
+
+typedef enum
+{
+  _RESET = 0,
+  _SET = !_RESET
+} BME280_FlagStatus;
+
+/******************************************************************************
  * @enum  BME_280_StandbyTimeInNormalMode
  * @brief This ENUM represents the values of standby time in case of using normal mode
  *
@@ -88,9 +95,9 @@ typedef enum
  *
  *******************************************************************************/
 typedef enum {
-	BME280_OK = 0,                      /**< BME280_OK */
-	BME280_NULL_ERROR = 0xFF,           /**< BME280_NULL_ERROR */
-	BME280_COMM_ERROR = 0x0A,           /**< BME280_COMM_ERROR */
+	BME280_OK = 0,
+	BME280_NULL_ERROR = 0xFF,
+	BME280_COMM_ERROR = 0x0A,
 	BME280_ERROR,
 	BME280_NOT_OK,
 	BME280_ERROR_INSTANCE_ALEARDY_TAKEN,
@@ -101,8 +108,54 @@ typedef enum {
 	BME280_ERROR_CANNOT_GET_T_SB_NOT_IN_NORMAL_MODE,
 	BME280_EXCEEDED_MIN_RANGE,
 	BME280_EXCEEDED_MAX_RANGE,
-	BME280_SETTINGS_FAILED_TO_BE_SET
+	BME280_SETTINGS_FAILED_TO_BE_SET,
+	BME280_SPI_TRANSIMISSION_FAILED,
+	BME280_I2C_TRANSIMISSION_FAILED,
+	BME280_SET_CS_FAILED,
+	BME280_RESET_CS_FAILED,
+	BME280_CALL_BACK_IS_NULL_ERROR,
+	BME280_CANNOT_HAVE_MORE_THAN_ONE_INSTANCE_OF_I2C,
+	BME280_WEAK_FUNCTION_NOT_IMPLEMENTED
 } BME_280_Status;
+
+
+/******************************************************************************
+ * @enum    BME_280_SPI_Status
+ * @brief   the user will supply this status to the driver
+ *
+ *******************************************************************************/
+typedef enum
+{
+	SPI_TRANSIMISSION_SUCCESSED = 9,
+	SPI_TRANSIMISSION_FAILED
+}BME_280_SPI_Status;
+
+/******************************************************************************
+ * @enum    BME_280_I2C_Status
+ * @brief   the user will supply this status to the driver
+ *
+ *******************************************************************************/
+typedef enum
+{
+	I2C_TRANSIMISSION_SUCCESSED = 9,
+	I2C_TRANSIMISSION_FAILED
+}BME_280_I2C_Status;
+
+
+/******************************************************************************
+ * @brief: Type defines for temperature/pressure/humidity in Fixed point
+ *******************************************************************************/
+typedef 	sint32  BME_280_TempType_fixedPoint;
+typedef 	uint32  BME_280_PressureType_fixedPoint;
+typedef 	uint32  BME_280_HumidityType_fixedPoint;
+
+/******************************************************************************
+ * @brief: Type defines for temperature/pressure/humidity in Floating point
+ *******************************************************************************/
+typedef 	float64 BME_280_TempType_floatingPoint;
+typedef 	float64 BME_280_PressureType_floatingPoint;
+typedef 	float64 BME_280_HumidityType_floatingPoint;
+
 
 
 /******************************************************************************

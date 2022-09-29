@@ -21,20 +21,27 @@
 
 #include "BME_280_Public_Types.h"
 
-/* BME_280 Pre-Compile Configuration Header file */
-#include "BME_280_Cfg.h"
-
-
-
 /*******************************************************************************
  *                          Pre-Processors Definition                          *
  *******************************************************************************/
+/* The number of Sensors to be configured */
+#define MAX_INSTANCE_OF_BME_280_SENSOR				10
+
 #define BME280_TEMP_PRESS_CALIB_DATA_LEN          (26U)
 #define BME280_HUMIDITY_CALIB_DATA_LEN            (7U)
 #define BME280_PRESS_TEMP_HUMI_DATA_LEN           (8U)
 
 #define SPI_READ_MASK							  (0x80)
 #define SPI_WRITE_MASK							  (0x7F)
+
+#define I2C_READ_MASK							  (0x01)
+#define I2C_WRITE_MASK							  (0xFE)
+
+
+#define BME280_I2C_TIMEOUT_MS						100
+#define BME280_SPI_TIMEOUT_MS						100
+
+
 #define IM_UPDATE_MASK							  (0x01)
 
 #define OCCUIPIED								  1U
@@ -42,6 +49,7 @@
 #define INSTANCE_TAKEN							  2U
 #define INSTANCE_NOT_TAKEN						  3U
 
+#define SENSOR_ADDRESS_IN_I2C_BUS				  (0x76U)
 
 #define BME280_SOFT_RESET_COMMAND                 (0xB6)
 
@@ -258,8 +266,6 @@ typedef union
 } BME280_StatusRegisterUnion;
 
 
-
-
 /******************************************************************************
  * @struct BME_280_Config
  * @brief  Structure to configure each individual sensor:
@@ -274,6 +280,10 @@ struct BME_280_Configurations
 	BME_280_CommunicationProtocol    ProtocolUsed;
 	BME_280_Calib1 					 calib1;
 	BME_280_Calib2 					 calib2;
+
+
+	void (*SetSlaveSelect_ptr)(void);
+	void (*ResetSlaveSelect_ptr)(void);
 };
 
 
