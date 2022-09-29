@@ -1,3 +1,17 @@
+/******************************************************************************
+ *
+ * Module: Bosch Sensortec BME280
+ *
+ * File Name: bme280.h
+ *
+ * Description: Header file for BME280 Sensor API functions.
+ *
+ * Date Created: 12/9/2022
+ *
+ * Author: Hazem Montasser
+ *
+ *******************************************************************************/
+
 #ifndef BME280_DRIVER_BME280_H_
 #define BME280_DRIVER_BME280_H_
 
@@ -130,7 +144,7 @@ typedef enum {
 /**
  * @enum BME280_Comm_Status
  * @brief Used by the user to return status if communication failed or succeeded
- * 		based on target implementation. Should be return through weak functions to be
+ * 		based on target implementation. Should be returned through weak functions to be
  * 		implemented by the user.
  *
  */

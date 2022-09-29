@@ -1,9 +1,18 @@
-/*
- * bme280.c
+/******************************************************************************
  *
- *  Created on: Sep 12, 2022
- *      Author: h4z3m
- */
+ * Module: Bosch Sensortec BME280
+ *
+ * File Name: bme280.c
+ *
+ * Description: Source file for BME280 Sensor API function implementation as well
+ * 			as private functions.
+ *
+ * Date Created: 12/9/2022
+ *
+ * Author: Hazem Montasser
+ *
+ *******************************************************************************/
+
 #include <bme280_private_defs.h>
 #include <bme280_private_types.h>
 #include "bme280.h"
@@ -286,13 +295,17 @@ static BME280_Status BME280_SPI_ReadWrapper(BME280_Handle *a_cfgPtr,
 
 	/* Status of SPI transmission */
 	BME280_Comm_Status status = 0;
+
 	/* Mask read address in SPI mode */
 	a_regAddr = BME280_SPI_READ_MASK(a_regAddr);
+
 	/* Pull SS pin low to write by calling user implemented GPIO callback*/
 	(*a_cfgPtr)->GPIOCallback_resetNSS();
+
 	/* Send control byte */
 	status = BME280_SPI_TransmitReceive(&a_regAddr, a_recvBuff, 1,
 	BME280_SPI_TIMEOUT_MS);
+
 	/* Receive data from sensor */
 	status = BME280_SPI_TransmitReceive(&a_regAddr, a_recvBuff, a_len,
 	BME280_SPI_TIMEOUT_MS);
@@ -313,18 +326,24 @@ static BME280_Status BME280_SPI_WriteWrapper(BME280_Handle *a_cfgPtr,
 		return BME280_CALLBACK_NOT_SET;
 	/* Status of SPI transmission */
 	BME280_Comm_Status status = 0;
+
 	/* Dummy byte to receive in */
 	BME280_uint8 dummy = 0;
+
 	/* Mask write address in SPI mode */
 	a_regAddr = BME280_SPI_WRITE_MASK(a_regAddr);
+
 	/* Pull SS pin low to write by calling user implemented GPIO callback*/
 	(*a_cfgPtr)->GPIOCallback_resetNSS();
+
 	/* Send control byte */
 	status = BME280_SPI_TransmitReceive(&a_regAddr, &dummy, 1,
 	BME280_SPI_TIMEOUT_MS);
+
 	/* Send data to write */
 	status = BME280_SPI_TransmitReceive(&a_dataByte, &dummy, 1,
 	BME280_SPI_TIMEOUT_MS);
+
 	/* Pull up SS pin to indicate end of transmission by calling user implemented GPIO callback */
 	(*a_cfgPtr)->GPIOCallback_SetNSS();
 
@@ -398,10 +417,12 @@ static BME280_Status BME280_Write(BME280_Handle *a_cfgPtr,
 
 	/* Check for used interface, if neither is specified return no interface specified*/
 	result = BME280_NO_INTERFACE_SPECIFIED;
+
 	/* Using I2C interface*/
 	if ((*a_cfgPtr)->Intf == BME280_Interface_I2C) {
 		return BME280_I2C_WriteWrapper(a_cfgPtr, a_regAddr, a_data_byte);
 	}
+
 	/* Using SPI interface */
 	else if ((*a_cfgPtr)->Intf == BME280_Interface_SPI) {
 		result = BME280_SPI_WriteWrapper(a_cfgPtr, a_regAddr, a_data_byte);
@@ -428,7 +449,10 @@ static BME280_Status BME280_isInstance(BME280_Handle *a_cfgPtr) {
 	return BME280_NOT_INSTANCE;
 }
 
-/* Getter functions for registers */
+
+/*******************************************************************************
+ *                          Getter functions for registers                     *
+ *******************************************************************************/
 
 static BME280_Status BME280_getConfigRegister(BME280_Handle *a_cfgPtr,
 		BME280_ConfigRegisterUnion *a_cfgRegPtr) {
@@ -1383,7 +1407,9 @@ BME280_Status BME280_getHumidity_floatingPoint(BME280_Handle *a_cfgPtr,
 	return result;
 }
 
-/* Setter functions for settings */
+/*******************************************************************************
+ *                          Setter functions for settings  					   *
+ *******************************************************************************/
 
 BME280_Status BME280_setPressureOversampling(BME280_Handle *a_cfgPtr,
 		BME280_Oversampling_setting a_pressureOversampling) {
@@ -1632,7 +1658,9 @@ BME280_Status BME280_setFilterCoefficient(BME280_Handle *a_cfgPtr,
 	return result;
 }
 
-/* Getter functions for settings */
+/*******************************************************************************
+ *                          Getter functions for settings                      *
+ *******************************************************************************/
 
 BME280_Status BME280_getUpdateStatus(BME280_Handle *a_cfgPtr,
 		BME280_UpdateStatus *a_updateFlag) {
@@ -1818,6 +1846,10 @@ BME280_Status BME280_DeInit(BME280_Handle *a_cfgPtr) {
 	return result;
 }
 
+/*******************************************************************************
+ *                          Callback setters		                           *
+ *******************************************************************************/
+
 BME280_Status BME280_setAssertNSSCallback(BME280_Handle *a_cfgPtr,
 		void (*a_callback)(void)) {
 	BME280_Status result = BME280_isInstance(a_cfgPtr);
@@ -1853,6 +1885,10 @@ BME280_Status BME280_setReleaseNSSCallback(BME280_Handle *a_cfgPtr,
 	} while (0);
 	return result;
 }
+
+/*******************************************************************************
+ *                          Weak functions definitions                         *
+ *******************************************************************************/
 
 __attribute__((weak)) BME280_Comm_Status BME280_SPI_TransmitReceive(
 		BME280_uint8 *txData, BME280_uint8 *rxData, BME280_uint16 size,

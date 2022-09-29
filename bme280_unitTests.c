@@ -1,9 +1,16 @@
-/*
- * BME280_Unit_Test_All_Funcs.c
+/******************************************************************************
  *
- *  Created on: Sep 21, 2022
- *      Author: h4z3m
- */
+ * Module: Bosch Sensortec BME280
+ *
+ * File Name: bme280_unitTests.c
+ *
+ * Description: Source file for BME280 Sensor unit test functions.
+ *
+ * Date Created: 21/2022
+ *
+ * Author: Hazem Montasser
+ *
+ *******************************************************************************/
 
 #include <bme280_unitTests.h>
 

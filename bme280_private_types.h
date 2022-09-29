@@ -1,9 +1,17 @@
-/*
- * bme280_defs.h
+/******************************************************************************
  *
- *  Created on: Sep 12, 2022
- *      Author: h4z3m
- */
+ * Module: Bosch Sensortec BME280
+ *
+ * File Name: bme280_private_types.h
+ *
+ * Description: Header file for BME280 Sensor private types used internally.
+ *
+ * Date Created: 12/9/2022
+ *
+ * Author: Hazem Montasser
+ *
+ *******************************************************************************/
+
 
 #ifndef BME280_DRIVER_BME280_DEFS_H_
 #define BME280_DRIVER_BME280_DEFS_H_
@@ -12,6 +20,7 @@
  *                          Includes		                                   *
  *******************************************************************************/
 #include <bme280.h>
+
 /*******************************************************************************
  *                          Typedefs		                                   *
  *******************************************************************************/

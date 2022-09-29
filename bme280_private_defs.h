@@ -1,3 +1,18 @@
+/******************************************************************************
+ *
+ * Module: Bosch Sensortec BME280
+ *
+ * File Name: bme280_private_defs.h
+ *
+ * Description: Header file for BME280 Sensor definitions, macros, and registers.
+ *
+ * Date Created: 8/9/2022
+ *
+ * Author: Hazem Montasser
+ *
+ *******************************************************************************/
+
+
 #ifndef _BME280_REGISTERS_
 #define _BME280_REGISTERS_
 
