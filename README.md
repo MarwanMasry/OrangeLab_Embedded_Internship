@@ -43,11 +43,19 @@ These functions are:
 
 Example implemntations can be found in the bme280_weak_impl_example.h file.
 
+
+## Hardware related notes  
+- For SPI, it is __required__ to have a GPIO pin configured to be controlled internally by the driver when needing to read/write connected to *CSB*. 
+
+- For I2C, it is __required__ to set the interface and connect the *CSB* pin to __VDDIO__. **SDO** pin __MUST__ be connected to ground so the slave address of the sensor is =(0x76). If it is connected to __VDDIO__, the slave address will be (0x77) and the enum in bme280_private_types must be edited.  
+
+
 ## Supported interfaces
 - I2C (1 sensor only)
 - SPI (up to 5 sensors simultaneously)
 
 ### Steps
+
 1. Define a sensor handle like so, this is the instance which will be used to specifically communicate with the sensor if multiple sensors exist.
 ``` C
 BME280_Handle my_sensor;
@@ -64,7 +72,7 @@ if(result!=BME280_FOUND_EMPTY_INSTANCE)
 ```
 3. After an instance has been obtained successfully, we must specify the interface type .
 
-##### For SPI
+#### For SPI
 - For SPI, these callbacks are called when driving the slave select pin low or high during SPI read/write.
 ```C
 BME280_setInterfaceType(&my_sensor, BME280_Interface_SPI);
@@ -79,7 +87,6 @@ BME280_setReleaseNSSCallback(&my_sensor, reset_nss_func);
 BME280_setInterfaceType(&my_sensor, BME280_Interface_I2C);
 ```
 
-_Note_:  For SPI, it is __required__ to have a GPIO pin configured to be controlled internally by the driver when needing to read/write. While in I2C, it is only required to set the interface and connect the CSB pin to VDDIO.
 
 4. After these steps have been completed successfully, the user can init the sensor and check if communication is successful.
 
